@@ -2,7 +2,7 @@
     "nodes":  [
                   {
                       "parameters":  {
-                                         "command":  "bash -lc \u0027\\nset -euo pipefail\\nDIR=/data/agency/datastore\\nSEC=/data/agency/secrets\\nmkdir -p \"$DIR\" \"$SEC\"\\n[ -f \"$DIR/channels.csv\" ] || printf \"%s\\\\n\" \"channel_id,platform,niche,language,active,weight,drive_folder_id,visibility,tags\" \u003e \"$DIR/channels.csv\"\\n[ -f \"$DIR/quota_log.csv\" ] || printf \"%s\\\\n\" \"ts,method,units\" \u003e \"$DIR/quota_log.csv\"\\n[ -f \"$DIR/published.csv\" ] || printf \"%s\\\\n\" \"ts,platform,slug,title,url,status,short_link\" \u003e \"$DIR/published.csv\"\\n[ -f \"$DIR/weights.csv\" ] || printf \"%s\\\\n\" \"channel_id,weight\" \u003e \"$DIR/weights.csv\"\\n[ -f \"$DIR/links.csv\" ] || printf \"%s\\\\n\" \"ts,code,long_url,program,niche\" \u003e \"$DIR/links.csv\"\\nmkdir -p /data/agency/{queue/{youtube,tiktok,instagram,pinterest,angles,hooks,threads,email,referrals,challenges,pingbacks},logs,dlq,runs,locks}\\n[ -f \"$SEC/youtube_access_token.txt\" ] || :\\necho READY\u0027"
+                                         "command":  "bash -lc \u0027\\nset -euo pipefail\\nDIR=/data/agency/datastore\\nSEC=/data/agency/secrets\\nmkdir -p \"$DIR\" \"$SEC\"\\n[ -f \"$DIR/channels.csv\" ] || printf \"%s\\n\" \"channel_id,platform,niche,language,active,weight,drive_folder_id,visibility,tags\" \u003e \"$DIR/channels.csv\"\\n[ -f \"$DIR/quota_log.csv\" ] || printf \"%s\\n\" \"ts,method,units\" \u003e \"$DIR/quota_log.csv\"\\n[ -f \"$DIR/published.csv\" ] || printf \"%s\\n\" \"ts,platform,slug,title,url,status,short_link\" \u003e \"$DIR/published.csv\"\\n[ -f \"$DIR/weights.csv\" ] || printf \"%s\\n\" \"channel_id,weight\" \u003e \"$DIR/weights.csv\"\\n[ -f \"$DIR/links.csv\" ] || printf \"%s\\n\" \"ts,code,long_url,program,niche\" \u003e \"$DIR/links.csv\"\\nmkdir -p /data/agency/{queue/{youtube,tiktok,instagram,pinterest,angles,hooks,threads,email,referrals,challenges,pingbacks},logs,dlq,runs,locks}\\nmkdir -p /data/agency/queue/email/{drafts,variants,sequences,html,deliverability,esp,qa}\\n[ -f \"$SEC/youtube_access_token.txt\" ] || :\\necho READY\u0027"
                                      },
                       "id":  "906bc2b6-fc42-48ff-9b0a-50a44d9dfafa",
                       "name":  "Ensure Datastore + Dirs",
@@ -1132,7 +1132,7 @@
                   },
                   {
                       "parameters":  {
-                                         "functionCode":  "const base = items[0].json || {};\nconst slug = base.slug || `email-${Date.now()}`;\nconst prompt = [\n  \"Write a 180-word direct response email that turns curiosity into clicks.\",\n  `Offer title: ${base.title || \"Affiliate Momentum\"}` ,\n  `Persona: ${(base.pick?.persona || base.meta?.persona || \"ambitious creator\")}` ,\n  `CTA: ${base.short_link || base.long_url || \"https://example.com/offer\"}` ,\n  \"Return JSON {subject,lineBreaks:[...],cta:{copy,link},ps}.\",\n].join(\"\\n\");\nlet response;\ntry {\n  response = await this.helpers.httpRequest({\n    method: \"POST\",\n    url: \"http://ollama:11434/api/generate\",\n    json: { model: \"llama3.1:8b\", prompt, stream: false },\n    timeout: 120000,\n  });\n} catch (error) {\n  response = { response: JSON.stringify({ subject: \"This unlocked 3x commissions\", lineBreaks: [\"Intro\", \"Story\", \"CTA\"], cta: { copy: \"Grab the template\", link: base.short_link || base.long_url || \"https://example.com\" }, ps: \"Reply PROMO for bonus swipe.\" }) };\n}\nconst raw = typeof response === \"string\" ? response : (response.response || response.body || JSON.stringify(response));\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n  if (!parsed.subject) throw new Error(\"missing subject\");\n} catch (error) {\n  parsed = { subject: raw.slice(0, 60) || \"Big win inside\", lineBreaks: [raw.slice(60, 200)], cta: { copy: \"Unlock the system\", link: base.short_link || \"https://example.com\" }, ps: \"Hit reply if you want the bonus pack.\" };\n}\nconst record = {\n  slug,\n  generatedAt: new Date().toISOString(),\n  type: \"email_pulse\",\n  email: parsed,\n};\nreturn [\n  {\n    json: {\n      ...base,\n      emailRecord: record,\n      emailPath: `/data/agency/queue/email/${slug}.jsonl`,\n    },\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify(record) + \"\\n\", \"utf8\").toString(\"base64\"),\n        mimeType: \"application/json\",\n        fileName: `${slug}.jsonl`,\n      },\n    },\n  },\n];"
+                                         "functionCode":  "const base = items[0].json || {};\nconst slug = base.slug || `email-${Date.now()}`;\nconst persona = base.pick?.persona || base.meta?.persona || base.persona || \u0027ambitious creator\u0027;\nconst pains = (base.researchInsights?.painPoints || base.research?.painPoints || []).slice(0, 4).join(\u0027 | \u0027);\nconst hooks = (base.hookstormRecord?.hooks || []).slice(0, 4).map(h =\u003e h?.hook || \u0027\u0027).filter(Boolean).join(\u0027 | \u0027);\nconst offer = base.title || \u0027Affiliate Momentum\u0027;\nconst shortLink = base.short_link || base.long_url || \u0027https://example.com/offer\u0027;\nconst prompt = [\n  \u0027Write a 180-220 word direct-response email that converts curiosity to clicks.\u0027,\n  `Offer: ${offer}`,\n  `Persona: ${persona}`,\n  `Key pains: ${pains}`,\n  `Primary hooks: ${hooks}`,\n  `CTA URL: ${shortLink}`,\n  \u0027Output JSON with: subject, preview, lineBreaks (array of paragraphs), CTA {copy,link}, ps, personaAngle, emotionalTone, spamRisks (array), hooksUsed (array), deliverabilityChecklist (array of bullet strings), complianceNotes (array), segment (string), dripIdeas (array of {day,angle,cta}).\u0027,\n].join(\u0027\\n\u0027);\nlet response;\ntry {\n  response = await this.helpers.httpRequest({\n    method: \u0027POST\u0027,\n    url: \u0027http://ollama:11434/api/generate\u0027,\n    json: { model: \u0027llama3.1:8b\u0027, prompt, stream: false },\n    timeout: 120000,\n  });\n} catch (error) {\n  response = {\n    response: JSON.stringify({\n      subject: \u0027These 3 tweaks 3x commissions\u0027,\n      preview: \u0027Quick win email for affiliate uplift\u0027,\n      lineBreaks: [\n        \u0027Hey there — quick win for scaling affiliate payouts without a new offer.\u0027,\n        \u0027We took the same bonus stack the top 2% run and packaged it so you plug it straight into your funnel.\u0027,\n        \u0027Want the walkthrough that tripled EPC in 9 days? Grab it here.\u0027\n      ],\n      cta: { copy: \u0027Steal the bonus stack\u0027, link: shortLink },\n      ps: \u0027Reply BONUS if you want a custom version built for your niche.\u0027,\n      personaAngle: persona,\n      emotionalTone: \u0027urgent-confidence\u0027,\n      spamRisks: [\u0027bonus\u0027, \u0027tripled\u0027],\n      hooksUsed: [\u0027bonus stack\u0027],\n      deliverabilityChecklist: [\u0027Keep subject under 48 chars\u0027, \u0027Use plain-text first send\u0027],\n      complianceNotes: [\u0027Avoid income claims\u0027],\n      segment: persona.toLowerCase().replace(/[^a-z0-9]+/g, \u0027-\u0027),\n      dripIdeas: [\n        { day: 1, angle: \u0027Proof drop\u0027, cta: \u0027Show me the 9-day gain\u0027 },\n        { day: 3, angle: \u0027Behind-the-scenes SOP\u0027, cta: \u0027Send the SOP\u0027 }\n      ],\n    }),\n  };\n}\nconst raw = typeof response === \u0027string\u0027\n  ? response\n  : (response?.response || response?.body || JSON.stringify(response));\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n  if (!parsed?.subject) throw new Error(\u0027missing subject\u0027);\n} catch (error) {\n  parsed = {\n    subject: raw.slice(0, 60) || \u0027Unlock this funnel upgrade\u0027,\n    preview: \u0027Quick win email for affiliate uplift\u0027,\n    lineBreaks: [raw.slice(60, 200) || \u0027Your bonus stack is ready.\u0027],\n    cta: { copy: \u0027Claim the stack\u0027, link: shortLink },\n    ps: \u0027Hit reply for the bonus pack.\u0027,\n    personaAngle: persona,\n    emotionalTone: \u0027pragmatic-high-signal\u0027,\n    spamRisks: [],\n    hooksUsed: [],\n    deliverabilityChecklist: [\u0027Keep text-to-link ratio above 80%\u0027],\n    complianceNotes: [],\n    segment: persona.toLowerCase().replace(/[^a-z0-9]+/g, \u0027-\u0027),\n    dripIdeas: [],\n  };\n}\nconst safeArray = (value, fallback = []) =\u003e\n  Array.isArray(value) ? value : (value ? [value] : fallback);\nconst email = {\n  subject: parsed.subject,\n  preview: parsed.preview || parsed.previewText || \u0027\u0027,\n  lineBreaks: safeArray(parsed.lineBreaks, safeArray(parsed.body)),\n  cta: parsed.cta || { copy: \u0027Unlock now\u0027, link: shortLink },\n  ps: parsed.ps || \u0027\u0027,\n  personaAngle: parsed.personaAngle || persona,\n  emotionalTone: parsed.emotionalTone || \u0027pragmatic-high-signal\u0027,\n  spamRisks: safeArray(parsed.spamRisks),\n  hooksUsed: safeArray(parsed.hooksUsed),\n  deliverabilityChecklist: safeArray(parsed.deliverabilityChecklist, [\u0027Run through deliverability scanner\u0027]),\n  complianceNotes: safeArray(parsed.complianceNotes),\n  segment: parsed.segment || persona.toLowerCase().replace(/[^a-z0-9]+/g, \u0027-\u0027),\n  dripIdeas: safeArray(parsed.dripIdeas).map(item =\u003e\n    typeof item === \u0027object\u0027\n      ? { day: item.day ?? safeArray(parsed.dripIdeas).indexOf(item) + 1, angle: item.angle || item.topic || \u0027\u0027, cta: item.cta || item.callToAction || \u0027\u0027 }\n      : { day: 1, angle: String(item), cta: \u0027Learn more\u0027 }\n  ),\n};\nconst record = {\n  slug,\n  generatedAt: new Date().toISOString(),\n  type: \u0027email_pulse\u0027,\n  persona,\n  pains,\n  hooks,\n  email,\n};\nreturn [\n  {\n    json: {\n      ...base,\n      emailRecord: record,\n      emailPath: `/data/agency/queue/email/${slug}.jsonl`,\n    },\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify(record) + \u0027\\n\u0027, \u0027utf8\u0027).toString(\u0027base64\u0027),\n        mimeType: \u0027application/json\u0027,\n        fileName: `${slug}.jsonl`,\n      },\n    },\n  },\n];"
                                      },
                       "id":  "eaef4a0f-c811-4694-8051-a1a92902bcbb",
                       "name":  "Email Pulse Composer",
@@ -1276,6 +1276,193 @@
                       "position":  [
                                        -16112,
                                        3900
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "const base = items[0].json || {};\nconst record = base.emailRecord || {};\nconst email = record.email || {};\nconst persona = record.persona || email.personaAngle || base.persona || \u0027general\u0027;\nconst segment = email.segment || persona.toLowerCase().replace(/[^a-z0-9]+/g, \u0027-\u0027);\nconst pains = (record.pains || \u0027\u0027).split(\u0027|\u0027).map(s =\u003e s.trim()).filter(Boolean);\nconst hooks = (record.hooks || \u0027\u0027).split(\u0027|\u0027).map(s =\u003e s.trim()).filter(Boolean);\nconst tiers = base.pick?.tiers || base.offerTiers || [];\nconst lifecycle = base.lifecycleStage || (base.channel_id ? \u0027subscriber\u0027 : \u0027prospect\u0027);\nconst matrix = [\n  {\n    persona,\n    segment,\n    lifecycle,\n    intensity: \u0027hot\u0027,\n    hook: hooks[0] || \u0027\u0027,\n    pain: pains[0] || \u0027\u0027,\n    tier: tiers[0]?.name || \u0027core\u0027,\n  },\n  {\n    persona,\n    segment: `${segment}-nurture`,\n    lifecycle: lifecycle === \u0027prospect\u0027 ? \u0027nurture\u0027 : lifecycle,\n    intensity: \u0027warm\u0027,\n    hook: hooks[1] || hooks[0] || \u0027\u0027,\n    pain: pains[1] || pains[0] || \u0027\u0027,\n    tier: tiers[1]?.name || \u0027vip\u0027,\n  },\n  {\n    persona,\n    segment: `${segment}-winback`,\n    lifecycle: \u0027winback\u0027,\n    intensity: \u0027cool\u0027,\n    hook: hooks[2] || hooks[0] || \u0027\u0027,\n    pain: pains[2] || pains[0] || \u0027\u0027,\n    tier: tiers[2]?.name || \u0027continuity\u0027,\n  },\n];\nreturn [\n  {\n    json: {\n      ...base,\n      emailPersonaMatrix: matrix,\n    },\n  },\n];"
+                                     },
+                      "id":  "df863979-f974-41c7-8faf-6f7d5f3a801d",
+                      "name":  "Email Persona Matrix",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -16112,
+                                       4320
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "const base = items[0].json || {};\nconst record = base.emailRecord || {};\nconst email = record.email || {};\nconst personaMatrix = base.emailPersonaMatrix || [];\nconst prompt = [\n  \u0027Create 5 subject+preview variants with CTA copy for email marketing.\u0027,\n  `Primary subject: ${email.subject || \u0027\u0027}`,\n  `Primary preview: ${email.preview || \u0027\u0027}`,\n  `Persona: ${record.persona || email.personaAngle || \u0027general\u0027}`,\n  `Segments: ${personaMatrix.map(item =\u003e item.segment).join(\u0027, \u0027)}`,\n  \u0027Return JSON array of {subject, preview, ctaCopy, tone, targetSegment}.\u0027,\n].join(\u0027\\n\u0027);\nlet response;\ntry {\n  response = await this.helpers.httpRequest({\n    method: \u0027POST\u0027,\n    url: \u0027http://ollama:11434/api/generate\u0027,\n    json: { model: \u0027llama3.1:8b\u0027, prompt, stream: false },\n    timeout: 120000,\n  });\n} catch (error) {\n  response = {\n    response: JSON.stringify([\n      { subject: \u0027Unlock 9-day EPC boost\u0027, preview: \u0027Copy the bonus stack playbook\u0027, ctaCopy: \u0027Show me the stack\u0027, tone: \u0027urgent\u0027, targetSegment: personaMatrix[0]?.segment || \u0027core\u0027 },\n      { subject: \u0027Creators tripled commissions with this tweak\u0027, preview: \u0027A 15-minute rebuild for your funnel\u0027, ctaCopy: \u0027Send the SOP\u0027, tone: \u0027curiosity\u0027, targetSegment: personaMatrix[1]?.segment || \u0027nurture\u0027 },\n    ]),\n  };\n}\nconst raw = typeof response === \u0027string\u0027 ? response : (response?.response || response?.body || JSON.stringify(response));\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n  if (!Array.isArray(parsed)) throw new Error(\u0027expected array\u0027);\n} catch (error) {\n  parsed = [{ subject: raw.slice(0, 60) || email.subject || \u0027Quick win inside\u0027, preview: email.preview || \u0027\u0027, ctaCopy: email.cta?.copy || \u0027Claim now\u0027, tone: \u0027pragmatic\u0027, targetSegment: personaMatrix[0]?.segment || \u0027core\u0027 }];\n}\nconst record = {\n  slug: record.slug || base.slug || `email-${Date.now()}`,\n  generatedAt: new Date().toISOString(),\n  variants: parsed,\n};\nreturn [\n  {\n    json: {\n      ...base,\n      emailVariantsRecord: record,\n      emailVariantsPath: `/data/agency/queue/email/variants/${record.slug}.jsonl`,\n    },\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify(record) + \u0027\\n\u0027, \u0027utf8\u0027).toString(\u0027base64\u0027),\n        mimeType: \u0027application/json\u0027,\n        fileName: `${record.slug}.jsonl`,\n      },\n    },\n  },\n];"
+                                     },
+                      "id":  "5b64674b-1b1d-4d52-963a-79ddd98012b3",
+                      "name":  "Email Variant Generator",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15904,
+                                       4320
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "append":  true
+                                                     },
+                                         "fileName":  "={{$json.emailVariantsPath}}"
+                                     },
+                      "id":  "50fbdebd-296d-4031-88b6-d45744ec57c6",
+                      "name":  "Write Email Variants",
+                      "type":  "n8n-nodes-base.writeBinaryFile",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15696,
+                                       4320
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "const base = items[0].json || {};\nconst record = base.emailRecord || {};\nconst email = record.email || {};\nconst personaMatrix = base.emailPersonaMatrix || [];\nconst prompt = [\n  \u0027Draft a 5-touch email sequence roadmap building on the core email.\u0027,\n  `Core CTA: ${email.cta?.copy || \u0027Claim the stack\u0027}`,\n  `Persona: ${record.persona || email.personaAngle || \u0027general\u0027}`,\n  `Segments: ${personaMatrix.map(s =\u003e `${s.segment}:${s.intensity}`).join(\u0027, \u0027)}`,\n  \u0027Return JSON array of {step, sendDay, angle, objective, ctaCopy, channelEcho (array)}.\u0027,\n].join(\u0027\\n\u0027);\nlet response;\ntry {\n  response = await this.helpers.httpRequest({\n    method: \u0027POST\u0027,\n    url: \u0027http://ollama:11434/api/generate\u0027,\n    json: { model: \u0027llama3.1:8b\u0027, prompt, stream: false },\n    timeout: 120000,\n  });\n} catch (error) {\n  response = {\n    response: JSON.stringify([\n      { step: 1, sendDay: 0, angle: \u0027Proof snapshot\u0027, objective: \u0027Establish outcome\u0027, ctaCopy: email.cta?.copy || \u0027Grab the SOP\u0027, channelEcho: [\u0027sms\u0027, \u0027dm\u0027] },\n      { step: 2, sendDay: 2, angle: \u0027Behind-the-scenes\u0027, objective: \u0027Build desire\u0027, ctaCopy: \u0027Send me the toolkit\u0027, channelEcho: [\u0027community\u0027] },\n      { step: 3, sendDay: 4, angle: \u0027Objection flip\u0027, objective: \u0027Handle risk\u0027, ctaCopy: \u0027Show me the case study\u0027, channelEcho: [\u0027ads\u0027, \u0027dm\u0027] },\n    ]),\n  };\n}\nconst raw = typeof response === \u0027string\u0027 ? response : (response?.response || response?.body || JSON.stringify(response));\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n  if (!Array.isArray(parsed)) throw new Error(\u0027expected array\u0027);\n} catch (error) {\n  parsed = [{ step: 1, sendDay: 0, angle: \u0027Quick win\u0027, objective: \u0027Get reply\u0027, ctaCopy: email.cta?.copy || \u0027Reply with BONUS\u0027, channelEcho: [\u0027dm\u0027] }];\n}\nconst sequenceRecord = {\n  slug: record.slug || base.slug || `email-${Date.now()}`,\n  generatedAt: new Date().toISOString(),\n  steps: parsed,\n};\nreturn [\n  {\n    json: {\n      ...base,\n      emailSequenceRecord: sequenceRecord,\n      emailSequencePath: `/data/agency/queue/email/sequences/${sequenceRecord.slug}.jsonl`,\n    },\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify(sequenceRecord) + \u0027\\n\u0027, \u0027utf8\u0027).toString(\u0027base64\u0027),\n        mimeType: \u0027application/json\u0027,\n        fileName: `${sequenceRecord.slug}.jsonl`,\n      },\n    },\n  },\n];"
+                                     },
+                      "id":  "baadd49b-2dc3-4c15-b180-48116335e0c2",
+                      "name":  "Email Sequence Planner",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15904,
+                                       4140
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "append":  true
+                                                     },
+                                         "fileName":  "={{$json.emailSequencePath}}"
+                                     },
+                      "id":  "2228462e-3e73-4095-9adf-99c839179a7b",
+                      "name":  "Write Email Sequence",
+                      "type":  "n8n-nodes-base.writeBinaryFile",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15696,
+                                       4140
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "const base = items[0].json || {};\nconst record = base.emailRecord || {};\nconst email = record.email || {};\nconst slug = record.slug || base.slug || `email-${Date.now()}`;\nconst paragraphs = Array.isArray(email.lineBreaks) ? email.lineBreaks : [String(email.lineBreaks || \u0027\u0027)];\nconst html = `\u003c!doctype html\u003e\\n\u003chtml lang=\"en\"\u003e\\n\u003chead\u003e\\n\u003cmeta charset=\"utf-8\" /\u003e\\n\u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /\u003e\\n\u003ctitle\u003e${email.subject || \u0027Email\u0027}\u003c/title\u003e\\n\u003c/head\u003e\\n\u003cbody style=\"font-family:Inter,Helvetica,Arial,sans-serif;color:#111;line-height:1.5;\"\u003e\\n\u003cp style=\"font-size:14px;color:#666;\"\u003e${email.preview || \u0027\u0027}\u003c/p\u003e\\n${paragraphs.map(p =\u003e `\u003cp style=\"font-size:16px;margin:16px 0;\"\u003e${p}\u003c/p\u003e`).join(\u0027\\n\u0027)}\\n\u003cp style=\"margin:24px 0;\"\u003e\u003ca href=\"${email.cta?.link || \u0027#\u0027}\" style=\"display:inline-block;background:#1b64f2;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;\"\u003e${email.cta?.copy || \u0027Learn more\u0027}\u003c/a\u003e\u003c/p\u003e\\n\u003cp style=\"font-size:14px;color:#555;\"\u003e${email.ps || \u0027\u0027}\u003c/p\u003e\\n\u003c/body\u003e\\n\u003c/html\u003e`;\nreturn [\n  {\n    json: {\n      ...base,\n      emailHtmlRecord: {\n        slug,\n        generatedAt: new Date().toISOString(),\n        html,\n      },\n      emailHtmlPath: `/data/agency/queue/email/html/${slug}.html`,\n    },\n    binary: {\n      html: {\n        data: Buffer.from(html, \u0027utf8\u0027).toString(\u0027base64\u0027),\n        mimeType: \u0027text/html\u0027,\n        fileName: `${slug}.html`,\n      },\n    },\n  },\n];"
+                                     },
+                      "id":  "7513648b-dbec-4b8a-8cb5-2ff65132d5a7",
+                      "name":  "Email HTML Renderer",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -16112,
+                                       4500
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "append":  false
+                                                     },
+                                         "fileName":  "={{$json.emailHtmlPath}}"
+                                     },
+                      "id":  "41f68721-b969-4282-ab6c-d9e3130b34b8",
+                      "name":  "Write Email HTML",
+                      "type":  "n8n-nodes-base.writeBinaryFile",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15904,
+                                       4500
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "const base = items[0].json || {};\nconst record = base.emailRecord || {};\nconst email = record.email || {};\nconst spamWords = [\u0027free\u0027, \u0027guarantee\u0027, \u0027risk-free\u0027, \u0027winner\u0027, \u0027cash\u0027];\nconst body = (Array.isArray(email.lineBreaks) ? email.lineBreaks.join(\u0027 \u0027) : String(email.lineBreaks || \u0027\u0027)) + \u0027 \u0027 + (email.ps || \u0027\u0027);\nconst found = spamWords\n  .map(word =\u003e ({ word, count: (body.match(new RegExp(word, \u0027ig\u0027)) || []).length }))\n  .filter(item =\u003e item.count \u003e 0);\nconst textLength = body.length;\nconst linkCount = (body.match(/https?:\\/\\//g) || []).length + ((email.cta?.link \u0026\u0026 email.cta.link.startsWith(\u0027http\u0027)) ? 1 : 0);\nconst score = Math.max(0, 100 - (found.length * 8) - (linkCount \u003e 3 ? (linkCount - 3) * 10 : 0));\nconst report = {\n  slug: record.slug || base.slug || `email-${Date.now()}`,\n  generatedAt: new Date().toISOString(),\n  score,\n  findings: found,\n  guidance: [\n    ...(email.deliverabilityChecklist || []),\n    ...(found.length ? [\u0027Consider rewriting highlighted spam terms.\u0027] : [\u0027No major spam triggers detected.\u0027]),\n    linkCount \u003e 3 ? \u0027Reduce hyperlink count to \u003c=3 per email.\u0027 : \u0027Link count healthy.\u0027,\n    textLength \u003c 400 ? \u0027Add more body copy to balance HTML weight.\u0027 : \u0027Body length healthy.\u0027,\n  ],\n};\nreturn [\n  {\n    json: {\n      ...base,\n      emailDeliverabilityRecord: report,\n      emailDeliverabilityPath: `/data/agency/queue/email/deliverability/${report.slug}.jsonl`,\n    },\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify(report) + \u0027\\n\u0027, \u0027utf8\u0027).toString(\u0027base64\u0027),\n        mimeType: \u0027application/json\u0027,\n        fileName: `${report.slug}.jsonl`,\n      },\n    },\n  },\n];"
+                                     },
+                      "id":  "d585c625-9c8b-4ca0-a992-1e16e2110c67",
+                      "name":  "Email Deliverability Scanner",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -16112,
+                                       4680
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "append":  true
+                                                     },
+                                         "fileName":  "={{$json.emailDeliverabilityPath}}"
+                                     },
+                      "id":  "1d7afca0-2fa8-4ab4-ac23-d4a3b070efda",
+                      "name":  "Write Email Deliverability",
+                      "type":  "n8n-nodes-base.writeBinaryFile",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15904,
+                                       4680
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "const base = items[0].json || {};\nconst htmlRecord = base.emailHtmlRecord || {};\nconst emailRecord = base.emailRecord || {};\nconst email = emailRecord.email || {};\nconst slug = emailRecord.slug || base.slug || `email-${Date.now()}`;\nconst payload = {\n  slug,\n  createdAt: new Date().toISOString(),\n  esp: \u0027sendgrid\u0027,\n  personalizations: [\n    {\n      subject: email.subject,\n      dynamic_template_data: {\n        preview: email.preview,\n        persona: email.personaAngle,\n        cta_copy: email.cta?.copy,\n        cta_url: email.cta?.link,\n      },\n    },\n  ],\n  content: [\n    { type: \u0027text/plain\u0027, value: (Array.isArray(email.lineBreaks) ? email.lineBreaks.join(\u0027\\n\\n\u0027) : \u0027\u0027) + `\\n\\n${email.cta?.copy || \u0027\u0027}: ${email.cta?.link || \u0027\u0027}` },\n    { type: \u0027text/html\u0027, value: htmlRecord.html || \u0027\u0027 },\n  ],\n};\nreturn [\n  {\n    json: {\n      ...base,\n      emailEspPayload: payload,\n      emailEspPath: `/data/agency/queue/email/esp/${slug}.json`,\n    },\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify(payload, null, 2) + \u0027\\n\u0027, \u0027utf8\u0027).toString(\u0027base64\u0027),\n        mimeType: \u0027application/json\u0027,\n        fileName: `${slug}.json`,\n      },\n    },\n  },\n];"
+                                     },
+                      "id":  "f7f952e4-e9ce-4a1e-8f66-0bfbe25d7192",
+                      "name":  "ESP Payload Builder",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15792,
+                                       4500
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "append":  false
+                                                     },
+                                         "fileName":  "={{$json.emailEspPath}}"
+                                     },
+                      "id":  "20d6e3dd-22a4-440e-ba7b-13137a559e72",
+                      "name":  "Write ESP Payload",
+                      "type":  "n8n-nodes-base.writeBinaryFile",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15584,
+                                       4500
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "const base = items[0].json || {};\nconst deliverability = base.emailDeliverabilityRecord || {};\nconst variants = base.emailVariantsRecord?.variants || [];\nconst sequence = base.emailSequenceRecord?.steps || [];\nconst htmlRecord = base.emailHtmlRecord || {};\nconst slug = deliverability.slug || base.emailRecord?.slug || base.slug || `email-${Date.now()}`;\nconst summary = {\n  slug,\n  generatedAt: new Date().toISOString(),\n  score: deliverability.score ?? 80,\n  spamFindings: deliverability.findings || [],\n  variantCount: variants.length,\n  sequenceTouchpoints: sequence.length,\n  htmlBytes: htmlRecord.html ? Buffer.from(htmlRecord.html, \u0027utf8\u0027).length : 0,\n  nextActions: [\n    ...(deliverability.guidance || []),\n    variants.length \u003c 3 ? \u0027Generate additional subject variants.\u0027 : \u0027Variant coverage good.\u0027,\n    sequence.length \u003c 3 ? \u0027Expand drip sequence to at least 3 touches.\u0027 : \u0027Sequence depth on target.\u0027,\n  ],\n};\nreturn [\n  {\n    json: {\n      ...base,\n      emailQaSummary: summary,\n      emailQaPath: `/data/agency/queue/email/qa/${slug}.jsonl`,\n    },\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify(summary) + \u0027\\n\u0027, \u0027utf8\u0027).toString(\u0027base64\u0027),\n        mimeType: \u0027application/json\u0027,\n        fileName: `${slug}.jsonl`,\n      },\n    },\n  },\n];"
+                                     },
+                      "id":  "bf0fb12f-3163-4651-8f75-1e380a83a73d",
+                      "name":  "Email QA Report",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15792,
+                                       4680
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+                                                         "append":  true
+                                                     },
+                                         "fileName":  "={{$json.emailQaPath}}"
+                                     },
+                      "id":  "b7d21776-2e3b-4549-a0bb-234f44e17a68",
+                      "name":  "Write Email QA",
+                      "type":  "n8n-nodes-base.writeBinaryFile",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -15584,
+                                       4680
                                    ]
                   }
               ],
@@ -2039,17 +2226,6 @@
                                                                ]
                                                            ]
                                               },
-                        "Email Pulse Composer":  {
-                                                     "main":  [
-                                                                  [
-                                                                      {
-                                                                          "node":  "Write Email Pulse",
-                                                                          "type":  "main",
-                                                                          "index":  0
-                                                                      }
-                                                                  ]
-                                                              ]
-                                                 },
                         "Referral Swarm Generator":  {
                                                          "main":  [
                                                                       [
@@ -2100,7 +2276,125 @@
                                                     },
                         "Write Dopamine Pingbacks":  {
 
-                                                     }
+                                                     },
+                        "Email Pulse Composer":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Write Email Pulse",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      },
+                                                                      {
+                                                                          "node":  "Email Persona Matrix",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Email Persona Matrix":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Email Variant Generator",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Email Variant Generator":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Email Sequence Planner",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         },
+                                                                         {
+                                                                             "node":  "Write Email Variants",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Email Sequence Planner":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "Email HTML Renderer",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        },
+                                                                        {
+                                                                            "node":  "Write Email Sequence",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "Email HTML Renderer":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Email Deliverability Scanner",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     },
+                                                                     {
+                                                                         "node":  "ESP Payload Builder",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     },
+                                                                     {
+                                                                         "node":  "Write Email HTML",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "ESP Payload Builder":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Write ESP Payload",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Email Deliverability Scanner":  {
+                                                             "main":  [
+                                                                          [
+                                                                              {
+                                                                                  "node":  "Email QA Report",
+                                                                                  "type":  "main",
+                                                                                  "index":  0
+                                                                              },
+                                                                              {
+                                                                                  "node":  "Write Email Deliverability",
+                                                                                  "type":  "main",
+                                                                                  "index":  0
+                                                                              }
+                                                                          ]
+                                                                      ]
+                                                         },
+                        "Email QA Report":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Write Email QA",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            }
                     },
     "pinData":  {
 
