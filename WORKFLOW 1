@@ -1,0 +1,1691 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "command": "bash -lc '\nset -euo pipefail\nDIR=/data/agency/datastore\nSEC=/data/agency/secrets\nmkdir -p \"$DIR\" \"$SEC\"\n[ -f \"$DIR/channels.csv\" ] || printf \"%s\\n\" \"channel_id,platform,niche,language,active,weight,drive_folder_id,visibility,tags\" > \"$DIR/channels.csv\"\n[ -f \"$DIR/quota_log.csv\" ] || printf \"%s\\n\" \"ts,method,units\" > \"$DIR/quota_log.csv\"\n[ -f \"$DIR/published.csv\" ] || printf \"%s\\n\" \"ts,platform,slug,title,url,status,short_link\" > \"$DIR/published.csv\"\n[ -f \"$DIR/weights.csv\" ] || printf \"%s\\n\" \"channel_id,weight\" > \"$DIR/weights.csv\"\n[ -f \"$DIR/links.csv\" ] || printf \"%s\\n\" \"ts,code,long_url,program,niche\" > \"$DIR/links.csv\"\nmkdir -p /data/agency/{queue/{youtube,tiktok,instagram,pinterest},logs,dlq,runs,locks}\n[ -f \"$SEC/youtube_access_token.txt\" ] || :\necho READY'\n"
+      },
+      "id": "906bc2b6-fc42-48ff-9b0a-50a44d9dfafa",
+      "name": "Ensure Datastore + Dirs",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -19968,
+        5160
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 20,
+              "minute": 10
+            }
+          ]
+        }
+      },
+      "id": "4b163bc8-31be-4ba8-b992-fc595b98432d",
+      "name": "Run 20:10 BKK (Targets 06:10 PT)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -20880,
+        5056
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 22,
+              "minute": 10
+            }
+          ]
+        }
+      },
+      "id": "3bf13af3-5244-499a-8279-47de51f84288",
+      "name": "Run 22:10 BKK (Targets 08:10 PT)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -20880,
+        5248
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 0,
+              "minute": 10
+            }
+          ]
+        }
+      },
+      "id": "8a453d42-71aa-40e6-a0aa-e4e1ae71db7e",
+      "name": "Run 00:10 BKK (Targets 10:10 PT)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -20880,
+        5440
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "run_id",
+              "name": "run_id",
+              "type": "string",
+              "value": "={{ $now.toISO() + '-' + $random.uuid() }}"
+            },
+            {
+              "id": "start_ts",
+              "name": "start_ts",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "691c0c30-bf2e-4b5c-89f2-0096728ed10a",
+      "name": "Run Manifest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -20656,
+        5160
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc 'mkdir -p /data/agency/locks; exec 9> /data/agency/locks/content.lock && flock -n 9 || { echo BUSY; exit 3; }; echo GOT'"
+      },
+      "id": "88062db3-cd97-48e5-9b91-6d7149af820f",
+      "name": "Acquire Lock",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -20432,
+        5160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"stdout\"]||\"\"}}",
+              "operation": "contains",
+              "value2": "GOT"
+            }
+          ]
+        }
+      },
+      "id": "d651fd41-99b7-4745-b8c9-a93e9d65978b",
+      "name": "Lock Acquired?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -20208,
+        5160
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "/data/agency/datastore/channels.csv"
+      },
+      "id": "c6212bce-dedd-4eeb-a152-a650f8c04dd5",
+      "name": "Read channels.csv",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -19760,
+        4920
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "function parseCSV(str){const out=[],line=[];let q=false;for(let i=0;i<str.length;i++){const c=str[i];if(c==='\\r')continue;if(c==='\\n'){out.push(line.join(''));line.length=0;q=false;continue;}if(c==='\"'){if(q&&str[i+1]==='\"'){line.push('\"');i++;}else q=!q;}else line.push(c);}if(line.length)out.push(line.join(''));return out.map(row=>{const a=[];let s='',qq=false;for(let i=0;i<row.length;i++){const ch=row[i];if(ch==='\"'){if(qq&&row[i+1]==='\"'){s+='\"';i++;}else qq=!qq;}else if(ch===','&&!qq){a.push(s);s='';}else s+=ch;}a.push(s);return a;});}\nconst b=items[0].binary?.data?.data||items[0].binary?.data;const buf=Buffer.from(b,'base64');const txt=buf.toString('utf8');const rows=parseCSV(txt);if(!rows.length)return [];\nconst h=rows[0].map(x=>String(x||'').trim());const idx=k=>h.indexOf(k);\nconst out=[];for(let i=1;i<rows.length;i++){const r=rows[i];if(!r)continue;const o={channel_id:r[idx('channel_id')]||'',platform:String(r[idx('platform')]||'youtube').toLowerCase(),niche:r[idx('niche')]||'',language:r[idx('language')]||'en-US',active:String(r[idx('active')]||'true').toLowerCase()==='true',weight:Number(r[idx('weight')]||1),drive_folder_id:r[idx('drive_folder_id')]||'',visibility:(r[idx('visibility')]||'private').toLowerCase(),tags:String(r[idx('tags')]||'').split(',').map(s=>s.trim()).filter(Boolean)};if(o.channel_id&&o.niche)out.push({json:o});}\nreturn out;"
+      },
+      "id": "f1d24285-14e7-4682-bc3c-fca7efc686cc",
+      "name": "CSV → JSON (Channels)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -19536,
+        4920
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.active===true}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "0b0725f1-5056-4964-895e-23430dcd01ec",
+      "name": "IF Active?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -19312,
+        4920
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "/data/agency/datastore/quota_log.csv"
+      },
+      "id": "d84112da-62a6-4b22-a842-ddda5eadcbb4",
+      "name": "Read quota_log.csv",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -19088,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "function parseCSV(str){const out=[],line=[];let q=false;for(let i=0;i<str.length;i++){const c=str[i];if(c==='\\r')continue;if(c==='\\n'){out.push(line.join(''));line.length=0;q=false;continue;}if(c==='\"'){if(q&&str[i+1]==='\"'){line.push('\"');i++;}else q=!q;}else line.push(c);}if(line.length)out.push(line.join(''));return out.map(row=>{const a=[];let s='',qq=false;for(let i=0;i<row.length;i++){const ch=row[i];if(ch==='\"'){if(qq&&row[i+1]==='\"'){s+='\"';i++;}else qq=!qq;}else if(ch===','&&!qq){a.push(s);s='';}else s+=ch;}a.push(s);return a;});}\nfunction ptNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Los_Angeles'}));}\nconst b=items[0].binary?.data?.data||items[0].binary?.data;const buf=Buffer.from(b,'base64');const txt=buf.toString('utf8');const rows=parseCSV(txt);if(!rows.length)return[{json:{today:new Date(ptNow()).toISOString().slice(0,10),used:0,remaining:10000,slots:3,runsLeft:3}}];const h=rows[0].map(x=>String(x||'').trim());const idx=k=>h.indexOf(k);const today=new Date(ptNow()).toISOString().slice(0,10);let used=0;for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[idx('ts')])continue;if(String(r[idx('ts')]).slice(0,10)===today)used+=Number(r[idx('units')]||0);}const LIMIT=10000;const remaining=Math.max(0,LIMIT-used);const hour=ptNow().getHours();const runsLeft=(hour<12?3:(hour<18?2:1));const slots=Math.max(0,Math.floor((remaining/1600)/runsLeft));return[{json:{today,used,remaining,slots,runsLeft}}];"
+      },
+      "id": "5f8ea1ea-87e2-462b-bfb6-d956817f3bd7",
+      "name": "Quota Summary (PT)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -18864,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const inItems=Array.isArray(items)?items:[];let quota=null;const channels=[];for(const it of inItems){const j=it.json||{};if(Object.prototype.hasOwnProperty.call(j,'slots')&&Object.prototype.hasOwnProperty.call(j,'remaining')){quota=j;}else{if(j&&j.active===true)channels.push(j);}}if(!quota){return channels.map(c=>({json:{...c,yt_selected:false,run_ts:new Date().toISOString(),slots:0}}));}const slots=Number(quota.slots||0);channels.sort((a,b)=>(b.weight||0)-(a.weight||0));const chosen=new Set(channels.slice(0,Math.min(slots,channels.length)).map(c=>c.channel_id));return channels.map(c=>({json:{...c,yt_selected:chosen.has(c.channel_id),run_ts:new Date().toISOString(),slots}}));"
+      },
+      "id": "edb24f1c-5621-4a8b-9f07-c59b0eb2a2e0",
+      "name": "Select YT Slots",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -18640,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "785b982d-1f70-4a79-9cfb-224bce7b3483",
+      "name": "Split Channels (1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        -18416,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://news.google.com/rss/search?q=' + encodeURIComponent($json.niche) + '&hl=en-US&gl=US&ceid=US:en' }}",
+        "responseFormat": "string",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "c93f20e1-10d1-4185-a6ba-9d184feb848a",
+      "name": "Google News RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -18192,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const xml=String(items[0].json||'');const titles=[...xml.matchAll(/<title>([^<]+)<\\/title>/g)].map(m=>m[1]).slice(1,25);const links=[...xml.matchAll(/<link>([^<]+)<\\/link>/g)].map(m=>m[1]).filter(u=>!u.includes('news.google.com/rss')).slice(0,24);const pairs=titles.map((t,i)=>({title:t,url:links[i]||''}));return[{json:{niche:$json.niche,candidates:pairs}}];"
+      },
+      "id": "a2c419be-2b9d-4614-8950-4f7185d95ed9",
+      "name": "Parse RSS",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -17968,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={\"model\":\"llama3.1:8b\",\"prompt\":\"Niche: {{$json.niche}}. Given these headlines: {{$json.candidates.map(c=>c.title).join(' | ')}}. Propose 9 evergreen, high-CTR topics with hooks and 8-12 H2/H3 outline. Output JSON array of {title,hook,outline,tags}.\",\"stream\":false}"
+      },
+      "id": "13b297b3-2425-403d-98d2-5a78a4fdb57a",
+      "name": "Ollama: Propose 9 Topics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -17744,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const raw=items[0].json;const txt=raw.response||raw.choices?.[0]?.text||'[]';let arr=[];try{arr=JSON.parse(txt)}catch(e){arr=[];}const pick=arr[0]||{title:`${$json.niche} daily`,hook:'',outline:'Intro\\nP1\\nP2\\nCTA',tags:[]};const slug=(pick.title||'post').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,80);return[{json:{...$json,pick,slug,title:pick.title}}];"
+      },
+      "id": "bf1db758-f0e9-4131-801b-7d722a9c605d",
+      "name": "Pick Topic",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -17520,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "program",
+              "name": "program",
+              "type": "string",
+              "value": "={{ $json.niche && $json.niche.toLowerCase().includes('yacht') ? 'BOATBOOKINGS' : 'VILLIERS' }}"
+            },
+            {
+              "id": "deeplink",
+              "name": "deeplink",
+              "type": "string",
+              "value": "={{ $json.program==='VILLIERS' ? 'https://www.villiersjets.com/?a=YOUR_ID' : 'https://www.boatbookings.com/?ref=YOUR_ID' }}"
+            },
+            {
+              "id": "utm_source",
+              "name": "utm_source",
+              "type": "string",
+              "value": "={{ $json.platform || 'youtube' }}"
+            },
+            {
+              "id": "utm_campaign",
+              "name": "utm_campaign",
+              "type": "string",
+              "value": "={{ ($json.niche || 'default').toLowerCase().replace(/[^a-z0-9]+/g,'-') }}"
+            },
+            {
+              "id": "disclosure",
+              "name": "disclosure",
+              "type": "string",
+              "value": "This video contains affiliate links. We may earn a commission."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c1d48b10-32ef-40b5-85cd-435d83db3cf3",
+      "name": "Offer Builder + Disclosure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -17296,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 180000
+        },
+        "bodyParametersJson": "={\"model\":\"llama3.1:8b\",\"prompt\":\"Write a 900-1200 word YouTube script in {{$json.language||'en-US'}}. Title: {{$json.title}}. Hook: {{$json.pick.hook}}. Outline: {{$json.pick.outline}}. Include in the first paragraph one CTA pointing to {{$json.deeplink}} with UTM {{$json.utm_source}}/{{$json.utm_campaign}}. Tone pragmatic, high signal. Include a 10-word title, 160-char description, and JSON block at end {\\\"title\\\",\\\"description\\\",\\\"tags\\\"}.\",\"stream\":false}"
+      },
+      "id": "2b06a776-0458-442c-91cc-e84c71f2044e",
+      "name": "Ollama: Draft Script",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -17072,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const text=items[0].json.response||items[0].json.choices?.[0]?.text||'';const metaMatch=text.match(/\\{\\s*\\\"title\\\"[\\s\\S]*\\}\\s*$/);let meta={title:$json.title,description:'',tags:$json.pick?.tags||[]};let body=text;if(metaMatch){try{meta=JSON.parse(metaMatch[0])}catch(e){}body=text.replace(metaMatch[0],'').trim();}const title=meta.title||$json.title;const slug=$json.slug;return[{json:{...$json,script:body,meta:{...meta,tags:Array.from(new Set([...(meta.tags||[]),...($json.pick?.tags||[])]))},title,slug}}];"
+      },
+      "id": "f8a6c70c-708d-4dd4-92c3-1234704d819e",
+      "name": "Pack Script + Meta",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -16848,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const u=new URL($json.deeplink||'');u.searchParams.set('utm_source',$json.utm_source||'youtube');u.searchParams.set('utm_medium',$json.platform||'video');u.searchParams.set('utm_campaign',$json.utm_campaign||'default');const long_url=u.toString();const code=(($json.slug||'').replace(/[^a-z0-9]/g,'').slice(0,10)||$random.uuid().replace(/-/g,'').slice(0,10))+String($now.toUNIX());const short_link='https://'+($env.PUBLIC_SITE||'example.com')+'/go/'+code;return[{json:{...$json,long_url,code,short_link}}];"
+      },
+      "id": "c37873c1-262c-46a7-b759-08a284c9584b",
+      "name": "Build CTA Link",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -16624,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ts",
+              "name": "ts",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "code",
+              "name": "code",
+              "type": "string",
+              "value": "={{ $json.code }}"
+            },
+            {
+              "id": "long_url",
+              "name": "long_url",
+              "type": "string",
+              "value": "={{ $json.long_url }}"
+            },
+            {
+              "id": "program",
+              "name": "program",
+              "type": "string",
+              "value": "={{ $json.program }}"
+            },
+            {
+              "id": "niche",
+              "name": "niche",
+              "type": "string",
+              "value": "={{ $json.niche }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "277d3ad0-0590-47b6-9b25-2c5db7309a6a",
+      "name": "Shortlink Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -16416,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "0a71873a-5dc4-4c4f-bc01-1fcef2c48227",
+      "name": "Shortlink → File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1,
+      "position": [
+        -16208,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "=/data/agency/datastore/links.csv",
+        "options": {}
+      },
+      "id": "45ca8c25-ba26-421c-a2ff-74bcd0f3a7d1",
+      "name": "Append → links.csv",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -16000,
+        5000
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const t=$json.script||'';const words=t.split(/\\s+/).filter(Boolean).length;const sentences=Math.max(1,(t.match(/[.!?]+\\s/g)||[]).length+1);const chars=t.replace(/\\s/g,'').length;const asl=words/sentences;const awl=chars/Math.max(1,words);const readability=Math.max(0,100-(asl*2+awl*10));const toxicity=0;return[{json:{...$json,readability,toxicity,quality_ok:(readability>=45&&toxicity<=0.15)}}];"
+      },
+      "id": "fdfae8b3-1c4e-4989-9fc6-d76f05479e8e",
+      "name": "Quality Gate (Local)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -18880,
+        5600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.quality_ok===true}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "2744c7e3-c4cc-4d85-97e9-8822287ba839",
+      "name": "Quality OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -18656,
+        5600
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "reason",
+              "name": "reason",
+              "type": "string",
+              "value": "quality_fail"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9035736f-ab82-4a9c-a2e0-9565750ea03a",
+      "name": "DLQ Envelope",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -18432,
+        5744
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2e8238cf-a9fc-4247-ae1c-39282c36f304",
+      "name": "DLQ → File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1,
+      "position": [
+        -18208,
+        5744
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "=/data/agency/dlq/{{$json.slug}}_{{$now.toUNIX()}}.json",
+        "options": {}
+      },
+      "id": "012aefc5-9b4e-4ab5-940c-aff606bfeffd",
+      "name": "Write DLQ",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -17984,
+        5744
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ts",
+              "name": "ts",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "stage",
+              "name": "stage",
+              "type": "string",
+              "value": "quality_gate"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $json.reason ? 'rejected' : 'ok' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "821ba9bb-e4ab-4037-83d7-e93416638850",
+      "name": "Log Line",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -18432,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "086bad52-cd41-4354-b306-c5c9faee8057",
+      "name": "Log → NDJSON",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1,
+      "position": [
+        -18208,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "=/data/agency/logs/{{$now.toFormat('yyyy-LL-dd')}}.ndjson",
+        "options": {}
+      },
+      "id": "27b8dcad-3a59-4012-82df-f5d38f32a305",
+      "name": "Append Log",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -17984,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs=require('fs');const dir='/data/agency';if(!fs.existsSync(dir))fs.mkdirSync(dir,{recursive:true});const p=`${dir}/${$json.slug}.txt`;fs.writeFileSync(p,$json.script||'', 'utf8');return[{json:{...$json,script_path:p}}];"
+      },
+      "id": "573e9dc8-5ac7-4fce-8fee-15bea05fc420",
+      "name": "Write /data script",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -17616,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc 'IMG=\"/data/agency/{{$json.slug}}.png\"; magick -size 1920x1080 xc:#0f0f0f -fill white -gravity center -pointsize 64 -annotate +0+0 \"{{$json.title.replace(/\\\"/g, \"\\\\\\\"\")}}\" \"$IMG\" >/dev/null 2>&1 && echo $IMG'"
+      },
+      "id": "e418b5ab-c76b-4e5d-b215-cdc9c8c4bf8c",
+      "name": "Thumbnail (magick)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -17392,
+        5376
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc 'WAV=\"/data/agency/{{$json.slug}}.wav\"; espeak-ng -v en-us -s 170 -p 50 -a 95 -f \"{{$json.script_path}}\" -w \"$WAV\" >/dev/null 2>&1 && echo $WAV'"
+      },
+      "id": "e901256b-a6ba-4757-b0fa-833cf941c19c",
+      "name": "TTS (espeak-ng) → WAV",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -17392,
+        5680
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc 'IMG=\"/data/agency/{{$json.slug}}.png\"; WAV=\"/data/agency/{{$json.slug}}.wav\"; MP4=\"/data/agency/{{$json.slug}}.mp4\"; ffmpeg -y -loop 1 -i \"$IMG\" -i \"$WAV\" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest \"$MP4\" -loglevel error && echo $MP4'"
+      },
+      "id": "f0b7c204-a5e5-4a13-bec3-832ed51a6b6e",
+      "name": "Mux to MP",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -17168,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "={{ '/data/agency/' + $json.slug + '.mp4' }}"
+      },
+      "id": "d28733c9-c473-4a56-8df6-60211c51f461",
+      "name": "Read MP4 (binary)",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -16944,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const baseTags=$json.meta?.tags||[];const luxe=($json.program==='VILLIERS'||$json.program==='BOATBOOKINGS')?['hnwi','ultra luxury','vip concierge','private charter']:[];const tags=Array.from(new Set([...baseTags,...luxe]));const desc=($json.meta?.description||'')+'\\n\\n'+'Book now: '+($json.short_link||$json.long_url||'')+'\\n\\n'+($json.disclosure||'');return[{json:{title:$json.title,description:desc,tags,visibility:$json.visibility||'private',platform:$json.platform||'youtube',yt_selected:$json.yt_selected,slug:$json.slug,short_link:$json.short_link}}];"
+      },
+      "id": "135cd42f-5fa7-4076-8931-835bd5cde6d2",
+      "name": "Set Upload Meta",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -16496,
+        5472
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "bbf71452-8886-4107-a369-57408f34a1b1",
+      "name": "Merge Meta + MP",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -16720,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "filePath": "/data/agency/secrets/youtube_access_token.txt"
+      },
+      "id": "db320605-2efe-4ffa-bcd9-d660762dc573",
+      "name": "Read YT Token",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -16496,
+        5664
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const b=items[0].binary?.data?.data||items[0].binary?.data;const t=Buffer.from(b,'base64').toString('utf8').trim();return[{json:{...$json,yt_access_token:t}}];"
+      },
+      "id": "98aa5e68-a7c0-4601-8e68-a2eee063fc5a",
+      "name": "Token → JSON",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -16272,
+        5664
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "ba219bd4-24d8-4045-8210-c92c56717994",
+      "name": "Merge With Token",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -16096,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={\"snippet\":{\"title\":$json.title,\"description\":$json.description,\"tags\":$json.tags||[],\"categoryId\":\"27\"},\"status\":{\"privacyStatus\":$json.visibility||\"private\"}}"
+      },
+      "id": "f1ece9ef-30cd-4a71-885b-2ba2452abf53",
+      "name": "YT Init Resumable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -15872,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "PUT",
+        "url": "={{ $json.headers?.location || $json.location || $items(\"YT Init Resumable\",0,0)[0].json.headers?.location }}",
+        "options": {
+          "timeout": 600000
+        },
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $json.yt_access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "video/mp4"
+            }
+          ]
+        }
+      },
+      "id": "51814484-ddae-4f77-a824-c1bf0d87b849",
+      "name": "YT Upload Chunk (full)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -15648,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const res=items[0].json||{};const id=res.id||res.videoId||res.snippet?.resourceId?.videoId||'';const url=id?`https://youtu.be/${id}`:'';return[{json:{...$json,yt_video_id:id,yt_url:url,status:id?200:(items[0].statusCode||0)}}];"
+      },
+      "id": "baa6d7b2-2c1c-45fa-bc13-c8c1934001f1",
+      "name": "YT Parse Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -15424,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return[{json:{ts:new Date().toISOString(),method:'videos.insert',units:1600}}];"
+      },
+      "id": "2f594e88-156f-49a8-b779-6d88571ac312",
+      "name": "Set Quota Row",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -15200,
+        5472
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc 'printf \"%s\\n\" \"{{$json.ts.replace(/\\\"/g,\"\\\\\\\"\")}},{{$json.method}},{{$json.units}}\" >> /data/agency/datastore/quota_log.csv && echo OK'"
+      },
+      "id": "241044fc-d51b-46f6-9250-e396fbd86e39",
+      "name": "Append → quota_log.csv",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -14976,
+        5472
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return[{json:{ts:new Date().toISOString(),platform:'youtube',slug:$json.slug,title:$json.title,url:$json.yt_url,status:$json.status||200,short_link:$json.short_link}}];"
+      },
+      "id": "d3f7ade3-878c-4345-bdc2-a80939cdf3c1",
+      "name": "Set Published Row",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -15200,
+        5136
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc 'printf \"%s\\n\" \"{{$json.ts.replace(/\\\"/g,\"\\\\\\\"\")}},{{$json.platform}},{{$json.slug}},{{$json.title.replace(/\\\"/g,\"\\\\\\\"\")}},{{$json.url}},{{$json.status}},{{$json.short_link||\"\"}}\" >> /data/agency/datastore/published.csv && echo OK'"
+      },
+      "id": "c7cc59fb-5dce-4316-b83f-13fd61242fc7",
+      "name": "Append → published.csv",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -14976,
+        5136
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ts",
+              "name": "ts",
+              "type": "string",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "id": "program",
+              "name": "program",
+              "type": "string",
+              "value": "={{ $json.program || 'UNKNOWN' }}"
+            },
+            {
+              "id": "slug",
+              "name": "slug",
+              "type": "string",
+              "value": "={{ $json.slug || '' }}"
+            },
+            {
+              "id": "clicks",
+              "name": "clicks",
+              "type": "number",
+              "value": "0"
+            },
+            {
+              "id": "bookings",
+              "name": "bookings",
+              "type": "number",
+              "value": "0"
+            },
+            {
+              "id": "revenue",
+              "name": "revenue",
+              "type": "number",
+              "value": "0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "90426aa8-fa22-4433-9ffc-c50a6979ecc5",
+      "name": "EPC Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -14624,
+        5136
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "12b0cd6f-dc7f-41d1-ae66-2fc88d1de1ba",
+      "name": "EPC → File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1,
+      "position": [
+        -14400,
+        5136
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "=/data/agency/datastore/epc.csv",
+        "options": {}
+      },
+      "id": "8dac7a02-91e8-466b-b39f-cdaa344d7a5a",
+      "name": "Append EPC",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -14176,
+        5136
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ ($env.PEERTUBE_URL||'http://127.0.0.1:9000') + '/api/v1/videos/upload' }}",
+        "options": {
+          "timeout": 120000
+        },
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.PEERTUBE_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "dd80122e-8166-40c7-87ab-9cbc706fe297",
+      "name": "PeerTube Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -13952,
+        5136
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "={{ ($env.BSKY_PDS||'https://bsky.social') + '/xrpc/com.atproto.repo.createRecord' }}",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 20000
+        },
+        "bodyParametersJson": "={\"repo\":\"{{$env.BSKY_HANDLE}}\",\"collection\":\"app.bsky.feed.post\",\"record\":{\"$type\":\"app.bsky.feed.post\",\"text\":\"New video: {{$json.title}}\",\"createdAt\":\"={{new Date().toISOString()}}\"}}"
+      },
+      "id": "b3c819b8-456c-4d01-81f1-2be48df11187",
+      "name": "Bluesky Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -13728,
+        5136
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "filePath": "/data/agency/datastore/published.csv"
+      },
+      "id": "a59f293b-79cf-44b9-8fa8-6fe6dc47d9a1",
+      "name": "Read published.csv (30d)",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -19760,
+        5376
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "function parseCSV(str){const out=[],line=[];let q=false;for(let i=0;i<str.length;i++){const c=str[i];if(c==='\\r')continue;if(c==='\\n'){out.push(line.join(''));line.length=0;q=false;continue;}if(c==='\"'){if(q&&str[i+1]==='\"'){line.push('\"');i++;}else q=!q;}else line.push(c);}if(line.length)out.push(line.join(''));return out.map(row=>{const a=[];let s='',qq=false;for(let i=0;i<row.length;i++){const ch=row[i];if(ch==='\"'){if(qq&&row[i+1]==='\"'){s+='\"';i++;}else qq=!qq;}else if(ch===','&&!qq){a.push(s);s='';}else s+=ch;}a.push(s);return a;});}\nconst b=items[0].binary?.data?.data||items[0].binary?.data;const buf=Buffer.from(b,'base64');const txt=buf.toString('utf8');const rows=parseCSV(txt);if(!rows.length)return[];const h=rows[0].map(x=>String(x||'').trim());const idx=k=>h.indexOf(k);const cutoff=Date.now()-30*86400000;const score={};for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[idx('ts')])continue;if(Date.parse(r[idx('ts')])<cutoff)continue;const title=r[idx('title')]||'';const ch=(title.split(' | ')[0]||'').trim();if(!ch)continue;score[ch]=(score[ch]||0)+1;}return Object.entries(score).map(([channel_id,val])=>({json:{channel_id,weight:Math.max(1,Math.round(val))}}));"
+      },
+      "id": "0e6703ae-bf4a-4581-9ade-ab84225255ed",
+      "name": "Reweight Channels",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -19536,
+        5376
+      ]
+    },
+    {
+      "parameters": {
+        "command": "bash -lc 'printf \"%s\\n\" \"{{$json.channel_id}},{{$json.weight}}\" >> /data/agency/datastore/weights.csv && echo OK'"
+      },
+      "id": "aaca7167-9e53-4623-ba97-ef1e83a3a759",
+      "name": "Update weights.csv",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -19312,
+        5376
+      ]
+    }
+  ],
+  "connections": {
+    "Run 20:10 BKK (Targets 06:10 PT)": {
+      "main": [
+        [
+          {
+            "node": "Run Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run 22:10 BKK (Targets 08:10 PT)": {
+      "main": [
+        [
+          {
+            "node": "Run Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run 00:10 BKK (Targets 10:10 PT)": {
+      "main": [
+        [
+          {
+            "node": "Run Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Manifest": {
+      "main": [
+        [
+          {
+            "node": "Acquire Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acquire Lock": {
+      "main": [
+        [
+          {
+            "node": "Lock Acquired?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lock Acquired?": {
+      "main": [
+        [
+          {
+            "node": "Ensure Datastore + Dirs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure Datastore + Dirs": {
+      "main": [
+        [
+          {
+            "node": "Read channels.csv",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read published.csv (30d)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read quota_log.csv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read channels.csv": {
+      "main": [
+        [
+          {
+            "node": "CSV → JSON (Channels)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CSV → JSON (Channels)": {
+      "main": [
+        [
+          {
+            "node": "IF Active?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Active?": {
+      "main": [
+        [
+          {
+            "node": "Read quota_log.csv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read quota_log.csv": {
+      "main": [
+        [
+          {
+            "node": "Quota Summary (PT)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quota Summary (PT)": {
+      "main": [
+        [
+          {
+            "node": "Select YT Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select YT Slots": {
+      "main": [
+        [
+          {
+            "node": "Split Channels (1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Channels (1)": {
+      "main": [
+        [
+          {
+            "node": "Google News RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google News RSS": {
+      "main": [
+        [
+          {
+            "node": "Parse RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse RSS": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Propose 9 Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Propose 9 Topics": {
+      "main": [
+        [
+          {
+            "node": "Pick Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Topic": {
+      "main": [
+        [
+          {
+            "node": "Offer Builder + Disclosure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offer Builder + Disclosure": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Draft Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Draft Script": {
+      "main": [
+        [
+          {
+            "node": "Pack Script + Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pack Script + Meta": {
+      "main": [
+        [
+          {
+            "node": "Build CTA Link",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read published.csv (Idempotency)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build CTA Link": {
+      "main": [
+        [
+          {
+            "node": "Shortlink Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shortlink Row": {
+      "main": [
+        [
+          {
+            "node": "Shortlink → File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shortlink → File": {
+      "main": [
+        [
+          {
+            "node": "Append → links.csv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read published.csv (Idempotency)": {
+      "main": [
+        [
+          {
+            "node": "Slug Already Published?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slug Already Published?": {
+      "main": [
+        [
+          {
+            "node": "IF Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Set Published Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Gate (Local)": {
+      "main": [
+        [
+          {
+            "node": "Quality OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality OK?": {
+      "main": [
+        [
+          {
+            "node": "Log Line",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DLQ Envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DLQ Envelope": {
+      "main": [
+        [
+          {
+            "node": "DLQ → File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DLQ → File": {
+      "main": [
+        [
+          {
+            "node": "Write DLQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Line": {
+      "main": [
+        [
+          {
+            "node": "Log → NDJSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log → NDJSON": {
+      "main": [
+        [
+          {
+            "node": "Append Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Log": {
+      "main": [
+        [
+          {
+            "node": "Write /data script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write /data script": {
+      "main": [
+        [
+          {
+            "node": "Thumbnail (magick)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TTS (espeak-ng) → WAV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thumbnail (magick)": {
+      "main": [
+        [
+          {
+            "node": "Mux to MP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS (espeak-ng) → WAV": {
+      "main": [
+        [
+          {
+            "node": "Mux to MP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mux to MP": {
+      "main": [
+        [
+          {
+            "node": "Read MP4 (binary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read MP4 (binary)": {
+      "main": [
+        [
+          {
+            "node": "Merge Meta + MP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Upload Meta": {
+      "main": [
+        [
+          {
+            "node": "Merge Meta + MP",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Meta + MP": {
+      "main": [
+        [
+          {
+            "node": "Read YT Token",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set Upload Meta",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge With Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read YT Token": {
+      "main": [
+        [
+          {
+            "node": "Token → JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token → JSON": {
+      "main": [
+        [
+          {
+            "node": "Merge With Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge With Token": {
+      "main": [
+        [
+          {
+            "node": "YT Init Resumable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT Init Resumable": {
+      "main": [
+        [
+          {
+            "node": "YT Upload Chunk (full)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT Upload Chunk (full)": {
+      "main": [
+        [
+          {
+            "node": "YT Parse Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT Parse Response": {
+      "main": [
+        [
+          {
+            "node": "Set Quota Row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set Published Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Quota Row": {
+      "main": [
+        [
+          {
+            "node": "Append → quota_log.csv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Published Row": {
+      "main": [
+        [
+          {
+            "node": "Append → published.csv",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "EPC Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append → published.csv": {
+      "main": [
+        [
+          {
+            "node": "EPC Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EPC Row": {
+      "main": [
+        [
+          {
+            "node": "EPC → File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EPC → File": {
+      "main": [
+        [
+          {
+            "node": "Append EPC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append EPC": {
+      "main": [
+        [
+          {
+            "node": "PeerTube Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PeerTube Upload": {
+      "main": [
+        [
+          {
+            "node": "Bluesky Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read published.csv (30d)": {
+      "main": [
+        [
+          {
+            "node": "Reweight Channels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reweight Channels": {
+      "main": [
+        [
+          {
+            "node": "Update weights.csv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
