@@ -15,7 +15,7 @@ import cmath
 import math
 import statistics
 
-from .codegen.backends import BackendDescriptor, get_backend, iter_backends
+from .codegen import BackendDescriptor, get_backend, iter_backends
 
 
 @dataclass()
