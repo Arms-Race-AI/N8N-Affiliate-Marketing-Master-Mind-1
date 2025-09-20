@@ -454,6 +454,7 @@
           <div id="overlayStatus" class="mono">idle</div>
         </div>
         <canvas id="mapCanvas" width="1024" height="420"></canvas>
+        <label class="toggle" style="margin-top:8px"><input type="checkbox" id="showBuildablePoly"> Show buildable polygon (Exact)</label>
         <div class="pill" style="margin-top:8px">
           <div class="t">Mode Comparison</div>
           <div class="v" id="compareResult">-</div>
@@ -1344,7 +1345,7 @@
           let prjText=null;
           for(const f of files){ const n=(f.name||f.path||'').toLowerCase(); if(n.endsWith('.prj')){ try{ prjText = await f.file.text(); }catch{} } }
           const gj = await window.shp(zipped);
-          const fromDef = projFromPrjText(prjText);
+          const fromDef = detectProj4FromWKT(prjText);
           const repro = fromDef? reprojectGeoJSON(gj, fromDef) : gj;
           pushGeoJSON(repro, `shp:${key}`);
         }catch(err){ diag.push(`[WARN] shapefile group failed (${key}): ${err.message}`); }
@@ -1449,7 +1450,7 @@
   $('#saveLog').addEventListener('click', ()=>{ const txt = $('#upLog').textContent || ''; if(!txt.trim()) return notify('warn','Log is empty.'); downloadText(`updater_${nowISO().slice(0,10)}.txt`, txt); notify('ok','Log exported.'); });
   /************ OVERLAY ENGINE (WORKER-BASED RASTER) ************/
   const canvas = $('#mapCanvas'); const ctx = canvas.getContext('2d');
-  let parcelGeom=null, overlayGeoms=[];
+  let parcelGeom=null, overlayGeoms=[];\n  let buildableGeomLL=null;
   function readJSONFile(f){ return f.text().then(txt=>{ const j = tryParse(txt); if(!j) throw new Error('Invalid JSON in '+f.name); return j; }); }
   function flattenFeatures(gj){
     const polys=[];
@@ -1465,7 +1466,7 @@
     else if(gj.type==='Polygon' || gj.type==='MultiPolygon' || gj.type==='GeometryCollection'){ fromGeom(gj); }
     return polys;
   }
-  function lonLatToMerc([lon,lat]){ const R=6378137; const x = R * (lon*Math.PI/180); const y = R * Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2)); return [x,y]; }
+  function lonLatToMerc([lon,lat]){ const R=6378137; const x = R * (lon*Math.PI/180); const y = R * Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2)); return [x,y]; } function mercToLonLat([x,y]){ const R=6378137; const lon = (x/R)*(180/Math.PI); const lat = (2*Math.atan(Math.exp(y/R)) - Math.PI/2)*(180/Math.PI); return [lon,lat]; }
   function areaOfRingMeters(ring){ let a=0; for(let i=0, j=ring.length-1; i<ring.length; j=i++){ const [x1,y1]=ring[j], [x2,y2]=ring[i]; a += (x1*y2 - x2*y1); } return Math.abs(a)/2.0; }
   function areaOfPolyMeters(poly){ const proj = poly.map(r=> r.map(lonLatToMerc)); let area = areaOfRingMeters(proj[0]); for(let i=1;i<proj.length;i++) area -= areaOfRingMeters(proj[i]); return area; }
   function bboxOfPolys(polys){ let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity; for(const poly of polys){ for(const ring of poly){ for(const [lon,lat] of ring){ const [x,y]=lonLatToMerc([lon,lat]); if(x<minx)minx=x; if(y<miny)miny=y; if(x>maxx)maxx=x; if(y>maxy)maxy=y; } } } return {minx,miny,maxx,maxy}; }
@@ -1605,8 +1606,7 @@
     const parcelArea = areaOfMultiPolyXY(parcelXY);
     const overlayArea = unionOver? areaOfMultiPolyXY(unionOver) : 0;
     const diff = unionOver? window.martinez.diff(parcelXY, unionOver) : parcelXY;
-    const buildableArea = diff? areaOfMultiPolyXY(diff) : 0;
-    $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    const buildableArea = diff? areaOfMultiPolyXY(diff) : 0;\n    // Convert diff XY back to lon/lat for drawing\n    try{ buildableGeomLL = (diff||[]).map(poly=> poly.map(ring=> ring.map(pt=> mercToLonLat(pt)))); }catch{}\n    if(document.getElementById('showBuildablePoly')?.checked){ redraw(); }\n    #parcelAreaVal.textContent   = Math.round(parcelArea).toLocaleString('en-AU');
     $('#overlayAreaVal').textContent  = Math.round(overlayArea).toLocaleString('en-AU');
     $('#buildableAreaVal').textContent= Math.round(buildableArea).toLocaleString('en-AU');
     $('#buildableArea').value = Math.round(buildableArea);
@@ -1633,9 +1633,8 @@
     downloadText('evidence_'+ nowISO().replace(/[:T]/g,'-').slice(0,16)+'.json', JSON.stringify(pack, null, 2));
     notify('ok','Evidence pack exported.');
   }
-  $('#exportEvidence').addEventListener('click', ()=>{ exportEvidence(); });
-  // ---- Minimal PRJ support (UTM/MGA hints) ----
-  function projFromPrjText(prj){ const t=String(prj||''); if(!t) return null; if(/WGS[_\s]*84/i.test(t)){ const m=t.match(/UTM\s*Zone\s*(\d+)\s*([NS])/i) || t.match(/MGA\s*Zone\s*(\d+)/i); if(m){ const zone=parseInt(m[1],10); const south=(m[2]||'N').toUpperCase()==='S'; return '+proj=utm +zone='+zone+' +datum=WGS84 +units=m +no_defs'+(south?' +south':''); } return 'WGS84'; } return null; }
+  \n  document.getElementById('showBuildablePoly')?.addEventListener('change', ()=> redraw());\n  // ---- Minimal PRJ support (UTM/MGA hints) ----
+  function detectProj4FromWKT(prj){ const t=String(prj||''); if(!t) return null; if(/WGS[_\s]*84/i.test(t)){ const m=t.match(/UTM\s*Zone\s*(\d+)\s*([NS])/i) || t.match(/MGA\s*Zone\s*(\d+)/i); if(m){ const zone=parseInt(m[1],10); const south=(m[2]||'N').toUpperCase()==='S'; return '+proj=utm +zone='+zone+' +datum=WGS84 +units=m +no_defs'+(south?' +south':''); } return 'WGS84'; } return null; }
   function reprojectGeoJSON(gj, fromDef){ if(!window.proj4||!fromDef||fromDef==='WGS84') return gj; const to='WGS84'; function tx(pt){ const r=proj4(fromDef,to,pt); return [r[0],r[1]]; } function walk(c){ if(typeof c[0]==='number'){ return tx(c);} return c.map(walk);} const clone=JSON.parse(JSON.stringify(gj)); if(clone.type==='FeatureCollection'){ for(const f of clone.features||[]){ if(f.geometry&&f.geometry.coordinates){ f.geometry.coordinates=walk(f.geometry.coordinates);} } } else if(clone.type==='Feature'){ if(clone.geometry&&clone.geometry.coordinates){ clone.geometry.coordinates=walk(clone.geometry.coordinates);} } else if(clone.coordinates){ clone.coordinates=walk(clone.coordinates);} return clone; }
   function loadDemoScenario(){
     try{
@@ -1867,6 +1866,11 @@
 </script>
 </body>
 </html>
+
+
+
+
+
 
 
 
