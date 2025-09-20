@@ -1045,27 +1045,28 @@
     const dom = new DOMParser().parseFromString(text,'text/html');
     const tables = Array.from(dom.querySelectorAll('table'));
     const out=[];
-    tables.forEach((table, index)=>{
+    tables.forEach((table, index)=>{ /*
       const name = table.getAttribute('id') || table.getAttribute('data-name') || 	able_;
+      */ const tableName = table.getAttribute('id') || table.getAttribute('data-name') || ('table_'+index);
       const headerCells = Array.from(table.querySelectorAll('thead tr th'));
       let headers = headerCells.map(cell=> cell.textContent.trim()).filter(Boolean);
       const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
       const allRows = bodyRows.length ? bodyRows : Array.from(table.querySelectorAll('tr'));
       let startIndex = 0;
       if(!headers.length && allRows.length){
-        headers = Array.from(allRows[0].children).map((cell,i)=> cell.textContent.trim() || col_);
+        headers = Array.from(allRows[0].children).map((cell,i)=> cell.textContent.trim() || ('col_'+(i+1)));
         if(!bodyRows.length && !headerCells.length) startIndex = 1;
       }
       const rows=[];
       allRows.forEach((tr, rowIndex)=>{
         if(rowIndex < startIndex) return;
         const cells = Array.from(tr.children);
-        if(!headers.length){ headers = cells.map((_,i)=> col_); }
+        if(!headers.length){ headers = cells.map((_,i)=> 'col_'+(i+1)); }
         const row={};
-        headers.forEach((header,i)=>{ row[header || col_] = (cells[i]?.textContent || '').trim(); });
+        headers.forEach((header,i)=>{ const key = header || ('col_'+(i+1)); row[key] = (cells[i]?.textContent || '').trim(); });
         if(Object.values(row).some(v=> v)) rows.push(row);
       });
-      if(headers.length && rows.length){ out.push({ name, rows }); }
+      if(headers.length && rows.length){ out.push({ name: tableName, rows }); }
     });
     return out;
   }
@@ -1164,9 +1165,17 @@
         ctx.errors.push(`${info.path}: ${err.message}`);
       }
     }
-    await ingestGeometry(ctx);
-    let summaryParts=[];
-    if(ctx.geomSummary?.parcel){ summaryParts.push(parcel: ~ sqm ()); }\r\n    if(ctx.geomSummary?.overlays){ summaryParts.push(overlays:  (~ sqm)); }\r\n  }
+    // Summarize ingest
+    const updatedKinds = Array.from(ctx.updated);
+    const summaryParts=[];
+    if(updatedKinds.length) summaryParts.push('updated: '+updatedKinds.join(', '));
+    if(ctx.pendingGeom.length) summaryParts.push(ctx.pendingGeom.length+' geometry file(s) queued');
+    if(ctx.errors.length) summaryParts.push(ctx.errors.length+' error(s)');
+    $('#ingestSummary').textContent = summaryParts.length ? summaryParts.join(' · ') : 'No recognizable datasets found';
+    $('#ingestDiagnostics').textContent = ctx.diag.join('\\n');
+    refreshAges();
+    notify('ok','Ingest complete.');
+  }
   async function runUpdater(manifest){
     log('— Update start —', new Date().toLocaleString());
     const out = { ok:[], fail:[] };
