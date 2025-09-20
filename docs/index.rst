@@ -6,6 +6,7 @@ UPEL⁴ Documentation
    :caption: Master Plan
 
    master_plan
+   system_architecture_almanac
 
 .. toctree::
    :maxdepth: 1
