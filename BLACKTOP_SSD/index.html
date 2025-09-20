@@ -710,7 +710,7 @@
     }
   }
   const ageFrom = obj => (!obj||!obj.lastUpdated)? 'â€”' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
-  function updateOperatingMode(){ $('#operatingMode').textContent = store.get(LSK.policyAllowNet)? 'Offline - Secure - Cached'; }
+  function updateOperatingMode(){ #operatingMode.textContent = store.get(LSK.policyAllowNet)? 'Offline - Startup refresh permitted' : 'Offline - Secure - Cached'; }
   const datasetFreshness = obj => {
     if(!obj) return {state:'warn', detail:'Not loaded', badge:'Awaiting dataset'};
     if(!obj.lastUpdated){ return {state:'warn', detail:'Custom import â€¢ verify metadata', badge:'Custom dataset'}; }
@@ -759,24 +759,24 @@
     const el = $('#insightNotes');
     if(!el) return;
     if(!sessionLog.length){ el.textContent = 'No actions recorded yet.'; return; }
-    const lines = sessionLog.slice(0,3).map(item=> `${item.ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} â€” ${item.entry}`);
+    const lines = sessionLog.slice(0,3).map(item=> item.ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' - ' + item.entry);
     el.textContent = lines.join('\n');
   }
   function updateInsightsFromStore(){
     const timing = store.get(LSK.lastTiming);
     if(timing){
       $('#insightTiming').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months)`;
-      $('#insightTimingMeta').textContent = `Risk ${timing.riskScore}/100 â€¢ ${timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'}`;
+      #insightTimingMeta.textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway');
       $('#timingSummary').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months). Risk ${timing.riskScore}/100. ${timing.fastTrackEligible? 'FAST-TRACK':'standard pathway'}`;
     }
     const feas = store.get(LSK.lastFeas);
     if(feas){
-      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; $('#insightFeasMeta').textContent = `Revenue ${fmtAUD(feas.revenue)} â€¢ Cost ${fmtAUD(feas.totalCost)}`;
+      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; #insightFeasMeta.textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
     }
     const build = store.get(LSK.buildable);
     if(build){
-      $('#insightBuildable').textContent = `${Math.round(build.buildableArea).toLocaleString('en-AU')} mÂ² buildable`;
-      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(build.parcelArea).toLocaleString('en-AU')} mÂ² â€¢ cell ${build.cellMeters} m`;
+      #insightBuildable.textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
+      #insightBuildableMeta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
       $('#parcelAreaVal').textContent = Math.round(build.parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent = Math.round(build.overlayArea).toLocaleString('en-AU');
       $('#buildableAreaVal').textContent = Math.round(build.buildableArea).toLocaleString('en-AU');
@@ -1475,7 +1475,7 @@
       }
     }catch(e){ /* ignore */ }
   }
-  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); $('#overlayStatus').textContent = 'Parcel loaded: '+f.name+' â€¢ area '+Math.round(area)+' mÂ²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
+  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); #overlayStatus.textContent = 'Parcel loaded: ' + f.name + ' - area ' + Math.round(area) + ' m²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
   $('#overlayFiles').addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); let total=0; overlayGeoms=[]; try{ for(const f of files){ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) continue; overlayGeoms.push(polys); total += polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); } store.put(LSK.overlays, overlayGeoms); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent = Math.round(total).toLocaleString('en-AU'); $('#overlayStatus').textContent = 'Loaded '+files.length+' overlay file(s)'; notify('ok','Overlay set updated.'); stampInsightUpdate(); }catch(err){ notify('danger','Overlay load failed: '+err.message); } });
   $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $#overlayAreaVal.textContent='-'; $('#overlayStatus').textContent='Overlays cleared.'; });
   const workerCode = `
@@ -1527,8 +1527,8 @@
       const status = `OK â€” cell ${cellMeters} m; parcel=${Math.round(parcelArea)} mÂ²; overlay=${Math.round(overlayArea)} mÂ²; buildable=${Math.round(buildableArea)} mÂ²`;
       $('#overlayStatus').textContent = status;
       store.put(LSK.buildable, {ts: nowISO(), cellMeters, parcelArea, overlayArea, buildableArea});
-      $('#insightBuildable').textContent = `${Math.round(buildableArea).toLocaleString('en-AU')} mÂ² buildable`;
-      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} mÂ² â€¢ cell ${cellMeters} m`;
+      #insightBuildable.textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
+      #insightBuildableMeta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
       stampInsightUpdate();
     }
   };
@@ -1571,8 +1571,8 @@
       $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
       $('#buildableAreaVal').textContent = 'â€”';
       store.del(LSK.buildable);
-      $('#insightBuildable').textContent = 'Run buildable engine for net developable area.';
-      $('#insightBuildableMeta').textContent = 'Select a resolution and press Compute Buildable.';
+      #insightBuildable.textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
+      #insightBuildableMeta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
       $('#parcelArea').value = Math.round(parcelArea);
       $('#overlayStatus').textContent = 'Demo parcel and overlay ready. Run buildable engine.';
       refreshAges();
@@ -1619,7 +1619,7 @@
   }
   function runTimingAuto(){
     const council = $('#councilName').value.trim();
-    if(!store.get(LSK.council)){ $('#insightTiming').textContent = 'Load datasets to begin.'; $('#insightTimingMeta').textContent = ''; return; }
+    if(!store.get(LSK.council)){ $('#insightTiming').textContent = 'Load datasets to begin.'; #insightTimingMeta.textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'); return; }
     if(!council) return;
     try{
       const res = timingPredict({ councilName: council, projectValue: +$('#projectValue').value||0, dwellings: +$('#projectYield').value||0 });
@@ -1629,7 +1629,7 @@
       status.textContent = e.message;
       status.className = 'status warn';
       $('#insightTiming').textContent = 'Awaiting valid timing inputs.';
-      $('#insightTimingMeta').textContent = e.message;
+      #insightTimingMeta.textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway');
     }
   }
   const scheduleTiming = debounce(runTimingAuto, 520);
@@ -1658,7 +1658,7 @@
   function runFeasAuto(){
     if(!$('#parcelArea').value || !$('#buildableArea').value){
       $('#insightFeas').textContent = 'Enter parcel + buildable areas to model economics.';
-      $('#insightFeasMeta').textContent = '';
+      #insightFeasMeta.textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
       return;
     }
     try{
@@ -1666,7 +1666,7 @@
       renderFeas(res, {silent:true});
     }catch(e){
       $('#insightFeas').textContent = 'Awaiting complete feasibility inputs.';
-      $('#insightFeasMeta').textContent = e.message;
+      #insightFeasMeta.textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
       $('#kRev').textContent = $('#kCost').textContent = $('#kProfit').textContent = 'â€”';
     }
   }
@@ -1775,4 +1775,6 @@
 </script>
 </body>
 </html>
+
+
 
