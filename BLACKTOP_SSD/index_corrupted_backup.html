@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -425,10 +425,12 @@
             <option value="0.5">0.5 m</option>
           </select>
           <select id="computeMode" title="Compute mode">
-            <option value="grid" selected>Grid (fast)</option>
+            <option value="auto" selected>Auto (recommended)</option>
+            <option value="grid">Grid (fast)</option>
             <option value="vector">Exact (vector)</option>
           </select>
           <button class="btn btn-gold" id="calcBuildable">Compute Buildable</button>
+          <button class="btn" id="compareModes">Compare Modes</button>
           <button class="btn" id="cancelBuildable">Cancel Compute</button>
           <button class="btn" id="clearOverlays">Clear Overlays</button>
         </div>
@@ -453,6 +455,11 @@
           <div id="overlayStatus" class="mono">idle</div>
         </div>
         <canvas id="mapCanvas" width="1024" height="420"></canvas>
+        <label class="toggle" style="margin-top:8px"><input type="checkbox" id="showBuildablePoly"> Show buildable polygon (Exact)</label>
+        <div class="pill" style="margin-top:8px">
+          <div class="t">Mode Comparison</div>
+          <div class="v" id="compareResult">-</div>
+        </div>
         <div class="foot">Offline geometry: projected to Web Mercator meters, rasterized at selected grid. Deterministic, bounded error <= cell_area x perimeter_factor. Computation runs in a worker for stability.</div>
       </article>
     </section>
@@ -717,7 +724,7 @@
     }
   }
   const ageFrom = obj => (!obj||!obj.lastUpdated)? '-' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
-  function updateOperatingMode(){ #operatingMode.textContent = store.get(LSK.policyAllowNet)? 'Offline - Startup refresh permitted' : 'Offline - Secure - Cached'; }
+  function updateOperatingMode(){ $('#operatingMode').textContent = store.get(LSK.policyAllowNet)? 'Offline - Startup refresh permitted' : 'Offline - Secure - Cached'; }
   const datasetFreshness = obj => {
     if(!obj) return {state:'warn', detail:'Not loaded', badge:'Awaiting dataset'};
     if(!obj.lastUpdated){ return {state:'warn', detail:'Custom import â€¢ verify metadata', badge:'Custom dataset'}; }
@@ -770,23 +777,40 @@
     el.textContent = lines.join('\n');
   }
   function updateInsightsFromStore(){
-    const timing = store.get(LSK.lastTiming);
-    if(timing){
-      $('#insightTiming').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months)`;
-      #insightTimingMeta.textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway');
-      $('#timingSummary').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months). Risk ${timing.riskScore}/100. ${timing.fastTrackEligible? 'FAST-TRACK':'standard pathway'}`;
-    }
+  const timing = store.get(LSK.lastTiming);
+  if(timing){
+    #insightTiming.textContent = ${timing.council}:  days (~ months);
+    #insightTimingMeta.textContent = Risk /100 - ;
+    #timingSummary.textContent = ${timing.council}:  days (~ months). Risk /100. ;
+  }
+  const feas = store.get(LSK.lastFeas);
+  if(feas){
+    #insightFeas.textContent = ${fmtAUD(feas.profit)} net profit;
+    #insightFeasMeta.textContent = Revenue  - Cost ;
+  }
+  const build = store.get(LSK.buildable);
+  if(build){
+    #insightBuildable.textContent = ${Math.round(build.buildableArea).toLocaleString('en-AU')} m² buildable;
+    #insightBuildableMeta.textContent = Parcel  m² - cell  m;
+    #parcelAreaVal.textContent = Math.round(build.parcelArea).toLocaleString('en-AU');
+    #overlayAreaVal.textContent = Math.round(build.overlayArea).toLocaleString('en-AU');
+    #buildableAreaVal.textContent = Math.round(build.buildableArea).toLocaleString('en-AU');
+    #buildableArea.value = Math.round(build.buildableArea);
+  }
+  updateInsightNotes();
+  populateCouncilDatalist();
+}
     const feas = store.get(LSK.lastFeas);
     if(feas){
-      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; #insightFeasMeta.textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
+      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; $('#insightFeasMeta').textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
     }
     const build = store.get(LSK.buildable);
     if(build){
-      #insightBuildable.textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
-      #insightBuildableMeta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
-      $('#parcelAreaVal').textContent = Math.round(build.parcelArea).toLocaleString('en-AU');
-      $('#overlayAreaVal').textContent = Math.round(build.overlayArea).toLocaleString('en-AU');
-      $('#buildableAreaVal').textContent = Math.round(build.buildableArea).toLocaleString('en-AU');
+      $('#insightBuildable').textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
+      $('#insightBuildable')Meta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
+      #"+$m.Groups[1].Value+".textContent = Math.round(build.parcelArea).toLocaleString('en-AU');
+      #"+$m.Groups[1].Value+".textContent = Math.round(build.overlayArea).toLocaleString('en-AU');
+      #"+$m.Groups[1].Value+".textContent = Math.round(build.buildableArea).toLocaleString('en-AU');
       $('#buildableArea').value = Math.round(build.buildableArea);
     }
     updateInsightNotes();
@@ -1335,8 +1359,13 @@
             zipper.file(name.split('/').pop(), data);
           }
           const zipped = await zipper.generateAsync({type:'arraybuffer'});
+          // Attempt to read PRJ for reprojection hints
+          let prjText=null;
+          for(const f of files){ const n=(f.name||f.path||'').toLowerCase(); if(n.endsWith('.prj')){ try{ prjText = await f.file.text(); }catch{} } }
           const gj = await window.shp(zipped);
-          pushGeoJSON(gj, `shp:${key}`);
+          const fromDef = detectProj4FromWKT(prjText);
+          const repro = fromDef? reprojectGeoJSON(gj, fromDef) : gj;
+          pushGeoJSON(repro, `shp:${key}`);
         }catch(err){ diag.push(`[WARN] shapefile group failed (${key}): ${err.message}`); }
       }
 
@@ -1355,9 +1384,9 @@
       redraw();
       const parcelArea = parcelPolys.reduce((a,p)=> a+areaOfPolyMeters(p), 0);
       const overlayArea = overlayPolys.flat().reduce((a,p)=> a+areaOfPolyMeters(p), 0);
-      $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
-      $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#overlayStatus').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} mÂ² Â· Overlays ${Math.round(overlayArea).toLocaleString('en-AU')} mÂ²`;
+      #"+$m.Groups[1].Value+".textContent = Math.round(parcelArea).toLocaleString('en-AU');
+      #"+$m.Groups[1].Value+".textContent = Math.round(overlayArea).toLocaleString('en-AU');
+      #"+$m.Groups[1].Value+".textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} mÂ² Â· Overlays ${Math.round(overlayArea).toLocaleString('en-AU')} mÂ²`;
       ctx.geomSummary = { parcel: parcelArea, overlays: overlayArea };
       diag.push('[GEOM] geometry applied to canvas and store');
     }catch(err){
@@ -1439,7 +1468,7 @@
   $('#saveLog').addEventListener('click', ()=>{ const txt = $('#upLog').textContent || ''; if(!txt.trim()) return notify('warn','Log is empty.'); downloadText(`updater_${nowISO().slice(0,10)}.txt`, txt); notify('ok','Log exported.'); });
   /************ OVERLAY ENGINE (WORKER-BASED RASTER) ************/
   const canvas = $('#mapCanvas'); const ctx = canvas.getContext('2d');
-  let parcelGeom=null, overlayGeoms=[];
+  let parcelGeom=null, overlayGeoms=[];\n  let buildableGeomLL=null;
   function readJSONFile(f){ return f.text().then(txt=>{ const j = tryParse(txt); if(!j) throw new Error('Invalid JSON in '+f.name); return j; }); }
   function flattenFeatures(gj){
     const polys=[];
@@ -1455,7 +1484,7 @@
     else if(gj.type==='Polygon' || gj.type==='MultiPolygon' || gj.type==='GeometryCollection'){ fromGeom(gj); }
     return polys;
   }
-  function lonLatToMerc([lon,lat]){ const R=6378137; const x = R * (lon*Math.PI/180); const y = R * Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2)); return [x,y]; }
+  function lonLatToMerc([lon,lat]){ const R=6378137; const x = R * (lon*Math.PI/180); const y = R * Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2)); return [x,y]; } function mercToLonLat([x,y]){ const R=6378137; const lon = (x/R)*(180/Math.PI); const lat = (2*Math.atan(Math.exp(y/R)) - Math.PI/2)*(180/Math.PI); return [lon,lat]; }
   function areaOfRingMeters(ring){ let a=0; for(let i=0, j=ring.length-1; i<ring.length; j=i++){ const [x1,y1]=ring[j], [x2,y2]=ring[i]; a += (x1*y2 - x2*y1); } return Math.abs(a)/2.0; }
   function areaOfPolyMeters(poly){ const proj = poly.map(r=> r.map(lonLatToMerc)); let area = areaOfRingMeters(proj[0]); for(let i=1;i<proj.length;i++) area -= areaOfRingMeters(proj[i]); return area; }
   function bboxOfPolys(polys){ let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity; for(const poly of polys){ for(const ring of poly){ for(const [lon,lat] of ring){ const [x,y]=lonLatToMerc([lon,lat]); if(x<minx)minx=x; if(y<miny)miny=y; if(x>maxx)maxx=x; if(y>maxy)maxy=y; } } } return {minx,miny,maxx,maxy}; }
@@ -1473,18 +1502,18 @@
         overlayGeoms = Array.isArray(o)? o : [];
         setViewFromPolys();
         redraw();
-        const parcelArea = (parcelGeom||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
-        const overlayArea = (overlayGeoms.flat()||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
-        if(parcelArea){ $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(parcelArea); }
-        if(overlayArea){ $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU'); }
-        $('#overlayStatus').textContent = 'Recovered last geometry from session.';
+      const parcelArea = (parcelGeom||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+      const overlayArea = (overlayGeoms.flat()||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+      if(parcelArea){ $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(parcelArea); }
+      if(overlayArea){ $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU'); }
+      $('#overlayStatus').textContent = 'Recovered last geometry from session.';
         notify('ok','Recovered geometry from last session.');
       }
     }catch(e){ /* ignore */ }
   }
-  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); #overlayStatus.textContent = 'Parcel loaded: ' + f.name + ' - area ' + Math.round(area) + ' m²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
+  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); $('#overlayStatus').textContent = 'Parcel loaded: ' + f.name + ' - area ' + Math.round(area) + ' m²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
   $('#overlayFiles').addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); let total=0; overlayGeoms=[]; try{ for(const f of files){ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) continue; overlayGeoms.push(polys); total += polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); } store.put(LSK.overlays, overlayGeoms); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent = Math.round(total).toLocaleString('en-AU'); $('#overlayStatus').textContent = 'Loaded '+files.length+' overlay file(s)'; notify('ok','Overlay set updated.'); stampInsightUpdate(); }catch(err){ notify('danger','Overlay load failed: '+err.message); } });
-  $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $#overlayAreaVal.textContent='-'; $('#overlayStatus').textContent='Overlays cleared.'; });
+  $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent='-'; $('#overlayStatus').textContent='Overlays cleared.'; });
   const workerCode = `
     self.onmessage = (ev)=>{
       const {parcel, overlays, resMeters} = ev.data;
@@ -1523,36 +1552,95 @@
   let worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'})));
   function attachWorkerHandlers(){
   worker.onmessage = (ev)=>{
-    if(ev.data.type==='progress'){
-      $('#overlayStatus').textContent = `Computingâ€¦ ${Math.round(100*ev.data.j/ev.data.height)}%`;
-    }else if(ev.data.type==='done'){
-      const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
-      $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
-      $('#overlayAreaVal').textContent  = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#buildableAreaVal').textContent= Math.round(buildableArea).toLocaleString('en-AU');
-      $('#buildableArea').value = Math.round(buildableArea);
-      const status = `OK â€” cell ${cellMeters} m; parcel=${Math.round(parcelArea)} mÂ²; overlay=${Math.round(overlayArea)} mÂ²; buildable=${Math.round(buildableArea)} mÂ²`;
-      $('#overlayStatus').textContent = status;
-      store.put(LSK.buildable, {ts: nowISO(), cellMeters, parcelArea, overlayArea, buildableArea});
-      #insightBuildable.textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
-      #insightBuildableMeta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
-      stampInsightUpdate();
-    }
-  };
-  worker.onerror = (e)=>{ $('#overlayStatus').textContent = 'Worker error: '+(e.message||'unknown'); notify('danger','Buildable worker error: '+(e.message||'unknown')); };
+  if(ev.data.type==='progress'){
+    #overlayStatus.textContent = Computing %;
+  } else if(ev.data.type==='done'){
+    const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
+    #parcelAreaVal.textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    #overlayAreaVal.textContent  = Math.round(overlayArea).toLocaleString('en-AU');
+    #buildableAreaVal.textContent= Math.round(buildableArea).toLocaleString('en-AU');
+    #buildableArea.value = Math.round(buildableArea);
+    const status = OK - cell  m; parcel= m²; overlay= m²; buildable= m²;
+    #overlayStatus.textContent = status;
+    store.put(LSK.buildable, {ts: nowISO(), method:'grid', cellMeters, parcelArea, overlayArea, buildableArea});
+    #insightBuildable.textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' m² buildable';
+    #insightBuildableMeta.textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' m² - cell ' + cellMeters + ' m';
+    stampInsightUpdate();
+  }
+};
+  worker.onerror = (e)=>{ #overlayStatus.textContent = 'Worker error: '+(e.message||'unknown'); notify('danger','Buildable worker error: '+(e.message||'unknown')); };
   }
   attachWorkerHandlers();
   $('#calcBuildable').addEventListener('click', ()=>{
-    if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel GeoJSON first.'); return; }
-    const resMeters = parseFloat($('#resSelect').value);
+  if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel GeoJSON first.'); return; }
+  const resMeters = parseFloat($('#resSelect').value);
+  const parcel = parcelGeom[0];
+  const overlaysFlat = overlayGeoms.flat();
+  if(!parcel){ notify('danger','Parcel polygon missing.'); return; }
+  const mode = ($('#computeMode')?.value)||'grid';
+  if(mode==='vector'){
+    computeExactBuildable();
+  } else {
+    $('#overlayStatus').textContent = 'Computing.';
+    worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
+  }
+});
+$('#compareModes').addEventListener('click', async ()=>{
+  try{
+    if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel first.'); return; }
+    const resMeters = parseFloat($('#resSelect').value)||1;
     const parcel = parcelGeom[0];
     const overlaysFlat = overlayGeoms.flat();
-    if(!parcel){ notify('danger','Parcel polygon missing.'); return; }
-    $('#overlayStatus').textContent = 'Computingâ€¦';
+    const done = new Promise((res, rej)=>{ const prev = worker.onmessage; worker.onmessage = (ev)=>{
+  if(ev.data.type==='progress'){
+    #overlayStatus.textContent = Computing %;
+  } else if(ev.data.type==='done'){
+    const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
+    #parcelAreaVal.textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    #overlayAreaVal.textContent  = Math.round(overlayArea).toLocaleString('en-AU');
+    #buildableAreaVal.textContent= Math.round(buildableArea).toLocaleString('en-AU');
+    #buildableArea.value = Math.round(buildableArea);
+    const status = OK - cell  m; parcel= m²; overlay= m²; buildable= m²;
+    #overlayStatus.textContent = status;
+    store.put(LSK.buildable, {ts: nowISO(), method:'grid', cellMeters, parcelArea, overlayArea, buildableArea});
+    #insightBuildable.textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' m² buildable';
+    #insightBuildableMeta.textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' m² - cell ' + cellMeters + ' m';
+    stampInsightUpdate();
+  }
+}; worker.onerror=(e)=>rej(e); });
+    $('#overlayStatus').textContent = 'Computing.';
     worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
+    const gridOut = await done;
+    const ok = computeExactBuildable();
+    if(!ok){ notify('warn','Exact compute failed.'); return; }
+    const exact = store.get(LSK.buildable);
+    const a = gridOut?.buildableArea||0, b = exact?.buildableArea||0;
+    const delta = a? ((b-a)/a)*100 : 0;
+    const rec = Math.abs(delta)>1 ? 'Exact' : 'Grid';
+    $('#compareResult').textContent = Grid  m² vs Exact  m² (%). Recommended: ;
+    notify('ok','Comparison complete.');
+  }catch(e){ notify('danger','Compare error: '+(e.message||e)); }
+});
   });
-  $('#cancelBuildable').addEventListener('click', ()=>{ try{ worker.terminate(); }catch{}; worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'}))); attachWorkerHandlers(); $('#overlayStatus').textContent = 'Computation cancelled.'; notify('warn','Buildable compute cancelled.'); });
-  // ---- Vector Exact Buildable (martinez + Mercator) ----
+  $('#cancelBuildable').addEventListener('click', ()=>{ try{ worker.terminate(); }catch{}; worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'}))); attachWorkerHandlers(); #"+$m.Groups[1].Value+".textContent = 'Computation cancelled.'; notify('warn','Buildable compute cancelled.'); });
+    // ---- Auto-pick compute mode (simple heuristic) ----
+  const LSK_REC = 'bt_compare_rec';
+  function estimateParcelArea(){ try{ return (parcelGeom||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0); }catch{ return 0; } }
+  function estimateOverlayComplexity(){ try{ return (overlayGeoms||[]).flat().reduce((n,poly)=> n + poly.length, 0); }catch{ return 0; } }
+  function pickModeHeuristic(){
+    const prev = store.get(LSK_REC);
+    if(prev==='Grid' || prev==='Exact'){ return prev.toLowerCase()==='exact' ? 'vector' : 'grid'; }
+    const area = estimateParcelArea();
+    const rings = estimateOverlayComplexity();
+    const res = parseFloat($('#resSelect').value)||1;
+    // Heuristic: small parcels or simple overlays → exact; very large or dense overlays → grid
+    if(area <= 750000 && rings < 200) return 'vector';
+    if(area > 2500000 || rings > 1200) return 'grid';
+    // Use resolution: sub-meter favors grid to avoid heavy vector complexity for dense overlays
+    if(res < 1) return 'grid';
+    return 'vector';
+  }
+
   function toXYPolys(polysLL){
     return polysLL.map(poly=> poly.map(ring=> ring.map(([lon,lat])=> lonLatToMerc([lon,lat])) ));
   }
@@ -1569,15 +1657,14 @@
     const parcelArea = areaOfMultiPolyXY(parcelXY);
     const overlayArea = unionOver? areaOfMultiPolyXY(unionOver) : 0;
     const diff = unionOver? window.martinez.diff(parcelXY, unionOver) : parcelXY;
-    const buildableArea = diff? areaOfMultiPolyXY(diff) : 0;
-    $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
-    $('#overlayAreaVal').textContent  = Math.round(overlayArea).toLocaleString('en-AU');
-    $('#buildableAreaVal').textContent= Math.round(buildableArea).toLocaleString('en-AU');
+    const buildableArea = diff? areaOfMultiPolyXY(diff) : 0;\n    // Convert diff XY back to lon/lat for drawing\n    try{ buildableGeomLL = (diff||[]).map(poly=> poly.map(ring=> ring.map(pt=> mercToLonLat(pt)))); }catch{}\n    if(document.getElementById('showBuildablePoly')?.checked){ redraw(); }\n    $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    #"+$m.Groups[1].Value+".textContent  = Math.round(overlayArea).toLocaleString('en-AU');
+    #"+$m.Groups[1].Value+".textContent= Math.round(buildableArea).toLocaleString('en-AU');
     $('#buildableArea').value = Math.round(buildableArea);
-    $('#overlayStatus').textContent = 'OK - exact vector method';
+    #"+$m.Groups[1].Value+".textContent = 'OK - exact vector method';
     store.put(LSK.buildable, {ts: nowISO(), method:'vector', parcelArea, overlayArea, buildableArea});
-    $('#insightBuildable').textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' m² buildable';
-    $('#insightBuildableMeta').textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' m² - exact vector';
+    #"+$m.Groups[1].Value+".textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' m² buildable';
+    $('$('#insightBuildable')Meta').textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' m² - exact vector';
     stampInsightUpdate();
     return true;
   }
@@ -1590,16 +1677,15 @@
     const build = store.get(LSK.buildable)||null;
     const datasets = { council: store.get(LSK.council)?.version||null, agency: store.get(LSK.agency)?.lastUpdated||null, backlog: store.get(LSK.backlog)?.lastUpdated||null, fast: store.get(LSK.fast)?.lastUpdated||null };
     const parcel = store.get(LSK.parcel)||null; const overlays = store.get(LSK.overlays)||null;
-    const inputs = { datasetMeta: datasets, parcelHash: parcel? await sha256Hex(JSON.stringify(parcel)) : null, overlaysHash: overlays? await sha256Hex(JSON.stringify(overlays)) : null, computeMode: ($('#computeMode')?.value)||'grid' };
+    const inputs = { datasetMeta: datasets, parcelHash: parcel? await sha256Hex(JSON.stringify(parcel)) : null, overlaysHash: overlays? await sha256Hex(JSON.stringify(overlays)) : null, computeMode: (#"+$m.Groups[1].Value+"?.value)||'grid' };
     const compute = build? { parcelArea: Math.round(build.parcelArea||0), overlayArea: Math.round(build.overlayArea||0), buildableArea: Math.round(build.buildableArea||0), method: build.method||'grid', cellMeters: build.cellMeters||null } : null;
     const pack = { exportedAt: nowISO(), method: compute?.method||inputs.computeMode, compute, inputs };
     const canonical = canonicalize(pack); const digest = await sha256Hex(canonical); pack.checksum = digest;
     downloadText('evidence_'+ nowISO().replace(/[:T]/g,'-').slice(0,16)+'.json', JSON.stringify(pack, null, 2));
     notify('ok','Evidence pack exported.');
   }
-  $('#exportEvidence').addEventListener('click', ()=>{ exportEvidence(); });
-  // ---- Minimal PRJ support (UTM/MGA hints) ----
-  function projFromPrjText(prj){ const t=String(prj||''); if(!t) return null; if(/WGS[_\s]*84/i.test(t)){ const m=t.match(/UTM\s*Zone\s*(\d+)\s*([NS])/i) || t.match(/MGA\s*Zone\s*(\d+)/i); if(m){ const zone=parseInt(m[1],10); const south=(m[2]||'N').toUpperCase()==='S'; return '+proj=utm +zone='+zone+' +datum=WGS84 +units=m +no_defs'+(south?' +south':''); } return 'WGS84'; } return null; }
+  \n  document.getElementById('showBuildablePoly')?.addEventListener('change', ()=> redraw());\n  // ---- Minimal PRJ support (UTM/MGA hints) ----
+  function detectProj4FromWKT(prj){ const t=String(prj||''); if(!t) return null; if(/WGS[_\s]*84/i.test(t)){ const m=t.match(/UTM\s*Zone\s*(\d+)\s*([NS])/i) || t.match(/MGA\s*Zone\s*(\d+)/i); if(m){ const zone=parseInt(m[1],10); const south=(m[2]||'N').toUpperCase()==='S'; return '+proj=utm +zone='+zone+' +datum=WGS84 +units=m +no_defs'+(south?' +south':''); } return 'WGS84'; } return null; }
   function reprojectGeoJSON(gj, fromDef){ if(!window.proj4||!fromDef||fromDef==='WGS84') return gj; const to='WGS84'; function tx(pt){ const r=proj4(fromDef,to,pt); return [r[0],r[1]]; } function walk(c){ if(typeof c[0]==='number'){ return tx(c);} return c.map(walk);} const clone=JSON.parse(JSON.stringify(gj)); if(clone.type==='FeatureCollection'){ for(const f of clone.features||[]){ if(f.geometry&&f.geometry.coordinates){ f.geometry.coordinates=walk(f.geometry.coordinates);} } } else if(clone.type==='Feature'){ if(clone.geometry&&clone.geometry.coordinates){ clone.geometry.coordinates=walk(clone.geometry.coordinates);} } else if(clone.coordinates){ clone.coordinates=walk(clone.coordinates);} return clone; }
   function loadDemoScenario(){
     try{
@@ -1623,14 +1709,14 @@
       redraw();
       const parcelArea = parcelGeom.reduce((sum,p)=> sum+areaOfPolyMeters(p),0);
       const overlayArea = overlayGeoms.flat().reduce((sum,p)=> sum+areaOfPolyMeters(p),0);
-      $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
-      $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#buildableAreaVal').textContent = 'â€”';
+      #"+$m.Groups[1].Value+".textContent = Math.round(parcelArea).toLocaleString('en-AU');
+      #"+$m.Groups[1].Value+".textContent = Math.round(overlayArea).toLocaleString('en-AU');
+      #"+$m.Groups[1].Value+".textContent = 'â€”';
       store.del(LSK.buildable);
-      #insightBuildable.textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
-      #insightBuildableMeta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
+      $('#insightBuildable').textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
+      $('#insightBuildable')Meta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
       $('#parcelArea').value = Math.round(parcelArea);
-      $('#overlayStatus').textContent = 'Demo parcel and overlay ready. Run buildable engine.';
+      #"+$m.Groups[1].Value+".textContent = 'Demo parcel and overlay ready. Run buildable engine.';
       refreshAges();
       runTimingAuto();
       runFeasAuto();
@@ -1675,7 +1761,7 @@
   }
   function runTimingAuto(){
     const council = $('#councilName').value.trim();
-    if(!store.get(LSK.council)){ $('#insightTiming').textContent = 'Load datasets to begin.'; #insightTimingMeta.textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'); return; }
+    if(!store.get(LSK.council)){ #"+$m.Groups[1].Value+".textContent = 'Load datasets to begin.'; $('$('#insightTiming')Meta').textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'); return; }
     if(!council) return;
     try{
       const res = timingPredict({ councilName: council, projectValue: +$('#projectValue').value||0, dwellings: +$('#projectYield').value||0 });
@@ -1684,8 +1770,8 @@
       const status=$('#timingStatus');
       status.textContent = e.message;
       status.className = 'status warn';
-      $('#insightTiming').textContent = 'Awaiting valid timing inputs.';
-      #insightTimingMeta.textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway');
+      #"+$m.Groups[1].Value+".textContent = 'Awaiting valid timing inputs.';
+      $('$('#insightTiming')Meta').textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway');
     }
   }
   const scheduleTiming = debounce(runTimingAuto, 520);
@@ -1714,7 +1800,7 @@
   function runFeasAuto(){
     if(!$('#parcelArea').value || !$('#buildableArea').value){
       $('#insightFeas').textContent = 'Enter parcel + buildable areas to model economics.';
-      #insightFeasMeta.textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
+      $('#insightFeasMeta').textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
       return;
     }
     try{
@@ -1722,7 +1808,7 @@
       renderFeas(res, {silent:true});
     }catch(e){
       $('#insightFeas').textContent = 'Awaiting complete feasibility inputs.';
-      #insightFeasMeta.textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
+      $('#insightFeasMeta').textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
       $('#kRev').textContent = $('#kCost').textContent = $('#kProfit').textContent = 'â€”';
     }
   }
@@ -1782,7 +1868,7 @@
   $('#guidePickData').addEventListener('click', ()=>{ $('#ingestAny')?.click(); notify('ok','Pick your data files (CSV/Excel/JSON).'); });
   $('#guidePickParcel').addEventListener('click', ()=>{ $('#parcelFile')?.click(); notify('ok','Pick your parcel geometry file.'); });
   $('#guidePickOverlays').addEventListener('click', ()=>{ $('#overlayFiles')?.click(); notify('ok','Pick one or more overlay files.'); });
-  $('#guideCompute').addEventListener('click', ()=>{ $('#calcBuildable')?.click(); closeGuide(); });
+  $('#guideCompute').addEventListener('click', ()=>{ #"+$m.Groups[1].Value+"?.click(); closeGuide(); });
   $('#guideAnalyze').addEventListener('click', ()=>{ try{ $('#runTiming')?.click(); $('#runFeas')?.click(); closeGuide(); }catch{} });
   $('#guideReport').addEventListener('click', ()=>{ $('#quickReport')?.click(); closeGuide(); });
   // Run All orchestration
@@ -1790,13 +1876,29 @@
     try{
       if(!store.get(LSK.council)){ notify('warn','Load your data files first (Guided Setup).'); openGuide(); return; }
       if(!parcelGeom || !parcelGeom.length){ notify('warn','Pick a parcel file first (Guided Setup).'); openGuide(); return; }
-      $('#resSelect').value = $('#resSelect').value || '1';
+      #"+$m.Groups[1].Value+".value = #"+$m.Groups[1].Value+".value || '1';
       const parcel = parcelGeom?.[0]; const overlaysFlat = overlayGeoms.flat(); if(!parcel){ notify('danger','Parcel missing'); return; }
       const done = new Promise((res, rej)=>{
-        const prev = worker.onmessage; worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
-        worker.onerror = (e)=>{ rej(e); };
+        const prev = worker.onmessage; worker.onmessage = (ev)=>{
+  if(ev.data.type==='progress'){
+    #overlayStatus.textContent = Computing %;
+  } else if(ev.data.type==='done'){
+    const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
+    #parcelAreaVal.textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    #overlayAreaVal.textContent  = Math.round(overlayArea).toLocaleString('en-AU');
+    #buildableAreaVal.textContent= Math.round(buildableArea).toLocaleString('en-AU');
+    #buildableArea.value = Math.round(buildableArea);
+    const status = OK - cell  m; parcel= m²; overlay= m²; buildable= m²;
+    #overlayStatus.textContent = status;
+    store.put(LSK.buildable, {ts: nowISO(), method:'grid', cellMeters, parcelArea, overlayArea, buildableArea});
+    #insightBuildable.textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' m² buildable';
+    #insightBuildableMeta.textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' m² - cell ' + cellMeters + ' m';
+    stampInsightUpdate();
+  }
+};
+        worker.onerror = (e)=>{ #overlayStatus.textContent = 'Worker error: '+(e.message||'unknown'); notify('danger','Buildable worker error: '+(e.message||'unknown')); };
       });
-      $('#overlayStatus').textContent = 'Computingâ€¦'; worker.postMessage({parcel, overlays: overlaysFlat, resMeters: parseFloat($('#resSelect').value)||1});
+      #"+$m.Groups[1].Value+".textContent = 'Computingâ€¦'; worker.postMessage({parcel, overlays: overlaysFlat, resMeters: parseFloat(#"+$m.Groups[1].Value+".value)||1});
       await done;
       $('#runTiming')?.click();
       $('#runFeas')?.click();
@@ -1809,15 +1911,31 @@
     try{
       loadDemoScenario();
       await new Promise(r=> setTimeout(r, 350));
-      $('#resSelect').value = '1';
+      #"+$m.Groups[1].Value+".value = '1';
       const parcel = parcelGeom?.[0];
       const overlaysFlat = overlayGeoms.flat();
       if(!parcel){ notify('danger','Self-check failed: parcel missing'); return; }
-      $('#overlayStatus').textContent = 'Computingâ€¦';
+      #"+$m.Groups[1].Value+".textContent = 'Computingâ€¦';
       const done = new Promise((res, rej)=>{
         const prev = worker.onmessage;
-        worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
-        worker.onerror = (e)=>{ rej(e); };
+        worker.onmessage = (ev)=>{
+  if(ev.data.type==='progress'){
+    #overlayStatus.textContent = Computing %;
+  } else if(ev.data.type==='done'){
+    const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
+    #parcelAreaVal.textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    #overlayAreaVal.textContent  = Math.round(overlayArea).toLocaleString('en-AU');
+    #buildableAreaVal.textContent= Math.round(buildableArea).toLocaleString('en-AU');
+    #buildableArea.value = Math.round(buildableArea);
+    const status = OK - cell  m; parcel= m²; overlay= m²; buildable= m²;
+    #overlayStatus.textContent = status;
+    store.put(LSK.buildable, {ts: nowISO(), method:'grid', cellMeters, parcelArea, overlayArea, buildableArea});
+    #insightBuildable.textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' m² buildable';
+    #insightBuildableMeta.textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' m² - cell ' + cellMeters + ' m';
+    stampInsightUpdate();
+  }
+};
+        worker.onerror = (e)=>{ #overlayStatus.textContent = 'Worker error: '+(e.message||'unknown'); notify('danger','Buildable worker error: '+(e.message||'unknown')); };
       });
       worker.postMessage({parcel, overlays: overlaysFlat, resMeters: 1});
       await done;
@@ -1831,6 +1949,19 @@
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
