@@ -157,6 +157,8 @@
   <script src="vendor/shp.min.js"></script>
 
   <script src="vendor/togeojson.js"></script>
+  <script src="vendor/proj4.min.js"></script>
+  <script src="vendor/martinez.min.js"></script>
 </head>
 <body>
   <div class="stellar" aria-hidden="true">
@@ -416,16 +418,20 @@
             <h2>Overlay &amp; Net Buildable Engine</h2>
             <div class="helper">Project parcel + overlays into a high-resolution raster engine to derive deterministic buildable area.</div>
           </div>
-          <div class="action-row">
-            <select id="resSelect" title="Grid resolution (meters)">
-              <option value="2">2 m</option>
-              <option value="1" selected>1 m</option>
-              <option value="0.5">0.5 m</option>
-            </select>
-            <button class="btn btn-gold" id="calcBuildable">Compute Buildable</button>
-            <button class="btn" id="cancelBuildable">Cancel Compute</button>
-            <button class="btn" id="clearOverlays">Clear Overlays</button>
-          </div>
+        <div class="action-row">
+          <select id="resSelect" title="Grid resolution (meters)">
+            <option value="2">2 m</option>
+            <option value="1" selected>1 m</option>
+            <option value="0.5">0.5 m</option>
+          </select>
+          <select id="computeMode" title="Compute mode">
+            <option value="grid" selected>Grid (fast)</option>
+            <option value="vector">Exact (vector)</option>
+          </select>
+          <button class="btn btn-gold" id="calcBuildable">Compute Buildable</button>
+          <button class="btn" id="cancelBuildable">Cancel Compute</button>
+          <button class="btn" id="clearOverlays">Clear Overlays</button>
+        </div>
         </div>
         <div class="row">
           <div>
@@ -528,6 +534,7 @@
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn" id="selfTest">Run Self Check</button>
+          <button class="btn" id="exportEvidence">Export Evidence</button>
           <button class="btn btn-danger" id="clearLocal">Purge Local Cache</button>
         </div>
         <datalist id="councilList"></datalist>
@@ -1545,6 +1552,55 @@
     worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
   });
   $('#cancelBuildable').addEventListener('click', ()=>{ try{ worker.terminate(); }catch{}; worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'}))); attachWorkerHandlers(); $('#overlayStatus').textContent = 'Computation cancelled.'; notify('warn','Buildable compute cancelled.'); });
+  // ---- Vector Exact Buildable (martinez + Mercator) ----
+  function toXYPolys(polysLL){
+    return polysLL.map(poly=> poly.map(ring=> ring.map(([lon,lat])=> lonLatToMerc([lon,lat])) ));
+  }
+  function areaOfRingXY(ring){ let a=0; for(let i=0,j=ring.length-1;i<ring.length;j=i++) { const [x1,y1]=ring[j], [x2,y2]=ring[i]; a += (x1*y2 - x2*y1); } return Math.abs(a)/2.0; }
+  function areaOfPolyXY(poly){ let a=areaOfRingXY(poly[0]); for(let i=1;i<poly.length;i++) a-=areaOfRingXY(poly[i]); return a; }
+  function areaOfMultiPolyXY(mpoly){ let s=0; for(const poly of mpoly){ s+=areaOfPolyXY(poly); } return s; }
+  function computeExactBuildable(){
+    if(!window.martinez){ notify('danger','Exact engine missing: martinez not loaded.'); return false; }
+    if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel first.'); return false; }
+    const parcelXY = toXYPolys(parcelGeom); // MultiPolygon
+    const overlaysXY = overlayGeoms.flat().map(poly=> poly.map(ring=> ring.map(([lon,lat])=> lonLatToMerc([lon,lat]))));
+    let unionOver=null;
+    for(const poly of overlaysXY){ unionOver = unionOver? window.martinez.union(unionOver,[poly]) : [poly]; }
+    const parcelArea = areaOfMultiPolyXY(parcelXY);
+    const overlayArea = unionOver? areaOfMultiPolyXY(unionOver) : 0;
+    const diff = unionOver? window.martinez.diff(parcelXY, unionOver) : parcelXY;
+    const buildableArea = diff? areaOfMultiPolyXY(diff) : 0;
+    $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    $('#overlayAreaVal').textContent  = Math.round(overlayArea).toLocaleString('en-AU');
+    $('#buildableAreaVal').textContent= Math.round(buildableArea).toLocaleString('en-AU');
+    $('#buildableArea').value = Math.round(buildableArea);
+    $('#overlayStatus').textContent = 'OK - exact vector method';
+    store.put(LSK.buildable, {ts: nowISO(), method:'vector', parcelArea, overlayArea, buildableArea});
+    $('#insightBuildable').textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' m² buildable';
+    $('#insightBuildableMeta').textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' m² - exact vector';
+    stampInsightUpdate();
+    return true;
+  }
+  // ---- Evidence Pack (checksum + canonical JSON) ----
+  async function sha256Hex(text){ const data=new TextEncoder().encode(text); const buf=await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+  function canonicalize(obj){ const sort=v=> (v&&typeof v==='object'&&!Array.isArray(v))? Object.keys(v).sort().reduce((o,k)=>{o[k]=sort(v[k]); return o;},{}): Array.isArray(v)? v.map(sort): v; return JSON.stringify(sort(obj)); }
+  async function exportEvidence(){
+    const timing = store.get(LSK.lastTiming)||null;
+    const feas = store.get(LSK.lastFeas)||null;
+    const build = store.get(LSK.buildable)||null;
+    const datasets = { council: store.get(LSK.council)?.version||null, agency: store.get(LSK.agency)?.lastUpdated||null, backlog: store.get(LSK.backlog)?.lastUpdated||null, fast: store.get(LSK.fast)?.lastUpdated||null };
+    const parcel = store.get(LSK.parcel)||null; const overlays = store.get(LSK.overlays)||null;
+    const inputs = { datasetMeta: datasets, parcelHash: parcel? await sha256Hex(JSON.stringify(parcel)) : null, overlaysHash: overlays? await sha256Hex(JSON.stringify(overlays)) : null, computeMode: ($('#computeMode')?.value)||'grid' };
+    const compute = build? { parcelArea: Math.round(build.parcelArea||0), overlayArea: Math.round(build.overlayArea||0), buildableArea: Math.round(build.buildableArea||0), method: build.method||'grid', cellMeters: build.cellMeters||null } : null;
+    const pack = { exportedAt: nowISO(), method: compute?.method||inputs.computeMode, compute, inputs };
+    const canonical = canonicalize(pack); const digest = await sha256Hex(canonical); pack.checksum = digest;
+    downloadText('evidence_'+ nowISO().replace(/[:T]/g,'-').slice(0,16)+'.json', JSON.stringify(pack, null, 2));
+    notify('ok','Evidence pack exported.');
+  }
+  $('#exportEvidence').addEventListener('click', ()=>{ exportEvidence(); });
+  // ---- Minimal PRJ support (UTM/MGA hints) ----
+  function projFromPrjText(prj){ const t=String(prj||''); if(!t) return null; if(/WGS[_\s]*84/i.test(t)){ const m=t.match(/UTM\s*Zone\s*(\d+)\s*([NS])/i) || t.match(/MGA\s*Zone\s*(\d+)/i); if(m){ const zone=parseInt(m[1],10); const south=(m[2]||'N').toUpperCase()==='S'; return '+proj=utm +zone='+zone+' +datum=WGS84 +units=m +no_defs'+(south?' +south':''); } return 'WGS84'; } return null; }
+  function reprojectGeoJSON(gj, fromDef){ if(!window.proj4||!fromDef||fromDef==='WGS84') return gj; const to='WGS84'; function tx(pt){ const r=proj4(fromDef,to,pt); return [r[0],r[1]]; } function walk(c){ if(typeof c[0]==='number'){ return tx(c);} return c.map(walk);} const clone=JSON.parse(JSON.stringify(gj)); if(clone.type==='FeatureCollection'){ for(const f of clone.features||[]){ if(f.geometry&&f.geometry.coordinates){ f.geometry.coordinates=walk(f.geometry.coordinates);} } } else if(clone.type==='Feature'){ if(clone.geometry&&clone.geometry.coordinates){ clone.geometry.coordinates=walk(clone.geometry.coordinates);} } else if(clone.coordinates){ clone.coordinates=walk(clone.coordinates);} return clone; }
   function loadDemoScenario(){
     try{
       store.put(LSK.council, BUILTIN_SAMPLE.council);
@@ -1775,6 +1831,7 @@
 </script>
 </body>
 </html>
+
 
 
 
