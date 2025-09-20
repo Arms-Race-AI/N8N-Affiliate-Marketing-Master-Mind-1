@@ -104,9 +104,16 @@ Metrics & Success Criteria
 
 Immediate Next Actions
 ----------------------
-1. Draft the System Architecture Almanac capturing IR flows, toolchains, and handoffs.
+1. DONE (2025-09-20): Publish the System Architecture Almanac capturing IR flows, toolchains, and handoffs.
+   - Location: docs/system_architecture_almanac.rst; refresh weekly through the Weeks 0-4 hardening phase.
 2. Instrument compile stages with OpenTelemetry/Prometheus probes and validate dashboards locally.
+   - Deliverables: instrumentation playbook, prototype spans around backend lowering + compile loops, Grafana dashboard skeleton.
 3. Complete DSL gap analysis for defense, fintech, medtech, and industrial IoT; rank missing constructs.
+   - Deliverables: schema pack backlog, parser extension plan, risk scoring hooks.
 4. Inventory model assets, licences, and hardware compatibility; outline quantisation/distillation roadmap.
+   - Deliverables: asset registry, licence checks, hardware coverage matrix, quantisation sequencing notes.
 5. Define compliance baseline requirements and integrate them into ReviewBot scoring criteria.
+   - Deliverables: baseline control list, ReviewBot scoring updates, evidence capture workflow.
 6. Outline GTM launch plan covering pricing, packaging, and partner recruitment for the first three verticals.
+   - Deliverables: pricing guardrails, tiered packaging, partner enablement plan aligned with telemetry insights.
+
