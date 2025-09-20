@@ -25,16 +25,22 @@ class BackendDescriptor:
 
     def required_binaries(self) -> tuple[str, ...]:
         """Return the toolchain binaries that should exist on PATH."""
-        names: list[str] = []
-        if self.compile_cmd:
-            names.append(self.compile_cmd[0])
-        if self.run_cmd:
-            names.append(self.run_cmd[0])
-        names.extend(self.extra_requires)
         seen: list[str] = []
-        for name in names:
-            if name and name not in seen:
-                seen.append(name)
+
+        def _record(candidate: str) -> None:
+            if not candidate:
+                return
+            if "{" in candidate or "}" in candidate:
+                return
+            if candidate not in seen:
+                seen.append(candidate)
+
+        if self.compile_cmd:
+            _record(self.compile_cmd[0])
+        if self.run_cmd:
+            _record(self.run_cmd[0])
+        for extra in self.extra_requires:
+            _record(extra)
         return tuple(seen)
 
     def missing_binaries(self) -> tuple[str, ...]:

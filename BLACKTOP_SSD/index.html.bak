@@ -964,170 +964,7 @@
     }
     return out;
   }
-
-  const GEOM_KEYWORDS = {
-    parcel: ['parcel','site','subject','boundary','lot','property','footprint','site area'],
-    overlay: ['overlay','constraint','hazard','buffer','flood','heritage','easement','restriction','no build','setback','encumbrance']
-  };
-  function geometrySourceLabel(info){
-    if(!info) return 'geometry';
-    if(info.path) return info.path;
-    if(info.name) return info.name;
-    if(info.file && info.file.name) return info.file.name;
-    return 'geometry';
-  }
-  function sumPolyArea(polys){
-    let total=0;
-    for(const poly of polys||[]){ total += areaOfPolyMeters(poly); }
-    return total;
-  }
-  function classifyGeometryCandidate(label, polys){
-    const area = sumPolyArea(polys);
-    const lower = String(label||'').toLowerCase();
-    const parcelHit = GEOM_KEYWORDS.parcel.some(k=> lower.includes(k));
-    const overlayHit = GEOM_KEYWORDS.overlay.some(k=> lower.includes(k));
-    let type;
-    if(parcelHit && !overlayHit) type='parcel';
-    else if(overlayHit && !parcelHit) type='overlay';
-    else if(polys.length===1) type='parcel';
-    else type='overlay';
-    let score = Math.max(0, Math.log10(Math.max(area,1)) * 18);
-    score += type==='parcel'? 60 : 40;
-    if(parcelHit) score += 12;
-    if(overlayHit) score += 12;
-    if(polys.length>1 && type==='overlay') score += 6;
-    return { type, area, score, detail:`${type} candidate (~${Math.round(area)} sqm)` };
-  }
-  function shapefileGroupKey(info){
-    const origin = info?.origin || 'shapefile';
-    const base = String(info?.path || info?.name || info?.file?.name || origin).replace(/.*[\\/]/,'').replace(/\.[^.]+$/,'');
-    return `${origin}::${base}`;
-  }
-  async function loadShapefileGeoJSON(files){
-    if(!window.JSZip || !window.shp) throw new Error('Shapefile support unavailable');
-    const zip = new JSZip();
-    for(const info of files){
-      const name = String(info.path || info.name || info.file?.name || 'part').replace(/.*[\\/]/,'');
-      const buffer = await info.file.arrayBuffer();
-      zip.file(name, buffer);
-    }
-    const archive = await zip.generateAsync({type:'arraybuffer'});
-    return await shp(archive);
-  }
-  async function parseKmlFile(info){
-    if(!window.toGeoJSON) throw new Error('toGeoJSON library not loaded');
-    const text = await info.file.text();
-    const dom = new DOMParser().parseFromString(text,'application/xml');
-    return window.toGeoJSON.kml(dom);
-  }
-  async function parseKmzFile(info){
-    if(!window.JSZip) throw new Error('JSZip required for KMZ');
-    if(!window.toGeoJSON) throw new Error('toGeoJSON library not loaded');
-    const buf = await info.file.arrayBuffer();
-    const zip = await JSZip.loadAsync(buf);
-    const entryName = Object.keys(zip.files||{}).find(name=> name.toLowerCase().endsWith('.kml'));
-    if(!entryName) throw new Error('KMZ missing KML payload');
-    const text = await zip.files[entryName].async('text');
-    const dom = new DOMParser().parseFromString(text,'application/xml');
-    return window.toGeoJSON.kml(dom);
-  }
-  async function ingestGeometry(ctx){
-    if(!ctx.pendingGeom || !ctx.pendingGeom.length) return;
-    const parcelCandidate = { score:-Infinity, polys:null, source:null, area:0 };
-    const overlayCandidates = [];
-    const leftover = [];
-    const shapefileGroups = new Map();
-    const handleGeo = (label, geojson)=>{
-      try{
-        const polys = flattenFeatures(geojson);
-        if(!polys || !polys.length){
-          ctx.diag.push(`[WARN] ${label} has no polygon features`);
-          return;
-        }
-        const cls = classifyGeometryCandidate(label, polys);
-        if(cls.type==='parcel'){
-          if(cls.score > parcelCandidate.score){
-            parcelCandidate.score = cls.score;
-            parcelCandidate.polys = polys;
-            parcelCandidate.source = label;
-            parcelCandidate.area = cls.area;
-          }else{
-            ctx.diag.push(`[SKIP] parcel candidate ${label} skipped (score ${cls.score.toFixed(1)} <= ${parcelCandidate.score.toFixed(1)})`);
-          }
-        }else{
-          overlayCandidates.push({ source:label, polys, area:cls.area, score:cls.score, detail:cls.detail });
-        }
-      }catch(err){
-        ctx.diag.push(`[WARN] geometry flatten failed for ${label}: ${err.message}`);
-      }
-    };
-    for(const entry of ctx.pendingGeom){
-      const {kind, info, payload} = entry;
-      const label = geometrySourceLabel(info);
-      try{
-        if(kind==='geojson' && payload){
-          handleGeo(label, payload);
-        }else if(kind==='shapefile'){
-          const key = shapefileGroupKey(info);
-          const group = shapefileGroups.get(key) || [];
-          group.push(info);
-          shapefileGroups.set(key, group);
-        }else if(kind==='kml'){
-          const gj = await parseKmlFile(info);
-          handleGeo(label, gj);
-        }else if(kind==='kmz'){
-          const gj = await parseKmzFile(info);
-          handleGeo(label, gj);
-        }else{
-          leftover.push(entry);
-        }
-      }catch(err){
-        ctx.diag.push(`[WARN] geometry ingest error for ${label}: ${err.message}`);
-      }
-    }
-    for(const [key, files] of shapefileGroups.entries()){
-      try{
-        const gj = await loadShapefileGeoJSON(files);
-        if(gj) handleGeo(files[0]?.path || files[0]?.name || key, gj);
-      }catch(err){
-        ctx.diag.push(`[WARN] shapefile ${key} failed: ${err.message}`);
-      }
-    }
-    ctx.pendingGeom = leftover;
-    const geomSummary = {};
-    let viewNeedsUpdate=false;
-    if(parcelCandidate.polys){
-      parcelGeom = parcelCandidate.polys;
-      store.put(LSK.parcel, parcelGeom);
-      const parcelArea = parcelCandidate.area;
-      $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
-      $('#parcelArea').value = Math.round(parcelArea);
-      ctx.updated.add('parcel geometry');
-      ctx.diag.push(`[OK] parcel geometry ingested from ${parcelCandidate.source} (~${Math.round(parcelArea)} sqm)`);
-      geomSummary.parcel = { area: parcelArea, source: parcelCandidate.source };
-      viewNeedsUpdate = true;
-    }
-    if(overlayCandidates.length){
-      overlayCandidates.sort((a,b)=> b.score - a.score);
-      overlayGeoms = overlayCandidates.map(o=> o.polys);
-      store.put(LSK.overlays, overlayGeoms);
-      const overlayArea = overlayCandidates.reduce((tot,o)=> tot + o.area, 0);
-      $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#overlayStatus').textContent = `Loaded ${overlayCandidates.length} ingest overlay file(s)`;
-      ctx.updated.add('overlay geometry');
-      ctx.diag.push(`[OK] ${overlayCandidates.length} overlay set(s) ingested (~${Math.round(overlayArea)} sqm)`);
-      geomSummary.overlays = { count: overlayCandidates.length, area: overlayArea };
-      viewNeedsUpdate = true;
-    }
-    if(viewNeedsUpdate){
-      setViewFromPolys();
-      redraw();
-      runFeasAuto();
-    }
-    if(Object.keys(geomSummary).length){
-      ctx.geomSummary = geomSummary;
-    }
-  }  function ingestCandidate(ctx, kind, candidate, source){
+  function ingestCandidate(ctx, kind, candidate, source){
     const slot = ctx.best[kind];
     if(candidate.score > slot.score){
       store.put(LSK[kind], candidate.norm);
@@ -1230,10 +1067,7 @@
   }
   async function ingestSmart(files, opts={}){
     if(!files || !files.length){ notify('warn','No files selected for ingest.'); return; }
-    if(!window.JSZip || !window.Papa || !window.XLSX){
-      notify('danger','Parsing libraries missing. Reload recommended.');
-      return;
-    }
+    if(!window.JSZip || !window.Papa || !window.XLSX){ notify('danger','Parsing libraries missing. Reload recommended.'); return; }
     const ctx = {
       diag:[],
       errors:[],
@@ -1245,47 +1079,25 @@
         backlog:{score:-Infinity,detail:'',rows:0,source:null},
         fast:{score:-Infinity,detail:'',rows:0,source:null}
       },
-      updated:new Set(),
-      geomSummary:null
+      updated:new Set()
     };
     ctx.diag.push(`[INFO] ingest start (${files.length} file(s))`);
     const expanded = await flattenIngestFiles(files, ctx);
-    ctx.diag.push(`[INFO] ${expanded.length} analyzable file(s)`);
+    ctx.diag.push(`� ${expanded.length} analyzable file(s)`);
     for(const info of expanded){
-      ctx.diag.push(`[INFO] ${info.path}`);
+      ctx.diag.push(`� ${info.path}`);
       try{
         if(info.ext==='json' || info.ext==='geojson'){
           const txt = await info.file.text();
           const parsed = tryParse(txt);
           if(!parsed){ ctx.diag.push('[WARN] invalid JSON'); continue; }
           if(handleJsonStructure(ctx, info, parsed)) continue;
-          if(Array.isArray(parsed)){ takeArrayCandidates(ctx, info, parsed); continue; }
-        } else if(info.ext==='csv' || info.ext==='tsv'){
-          const parsed = await parseDelimitedFile(info.file, info.ext==='tsv'? '\t':undefined);
-          takeArrayCandidates(ctx, info, parsed.rows);
-          continue;
-        } else if(info.ext==='xlsx' || info.ext==='xls'){
-          const sheets = await parseExcelFile(info.file);
-          if(!sheets.length){ ctx.diag.push('[WARN] empty workbook'); continue; }
-          for(const sheet of sheets){
-            ctx.diag.push(`  [INFO] sheet ${sheet.name}`);
-            takeArrayCandidates(ctx, {path:`${info.path}:${sheet.name}`}, sheet.rows);
-          }
-          continue;
-        } else if(info.ext==='kml' || info.ext==='kmz'){
-          ctx.pendingGeom.push({ kind: info.ext, info });
-          ctx.diag.push('[GEOM] KML/KMZ queued for geo ingest');
-          continue;
-        } else if(['shp','dbf','shx','prj','cpg'].includes(info.ext)){
-          ctx.pendingGeom.push({ kind:'shapefile', info });
-          continue;
-        } else if(info.ext==='txt'){
-          const txt = await info.file.text();
-          const parsed = tryParse(txt);
-          if(parsed && typeof parsed==='object'){
-            if(handleJsonStructure(ctx, info, parsed)) continue;
-            if(Array.isArray(parsed)){ takeArrayCandidates(ctx, info, parsed); continue; }
-          }
+          if(Array.isArray(parsed)) { takeArrayCandidates(ctx, info, parsed); continue; }
+        } else if(info.ext==='csv' || info.ext==='tsv'){ const parsed = await parseDelimitedFile(info.file, info.ext==='tsv'? '\t':undefined); takeArrayCandidates(ctx, info, parsed.rows); continue; }
+        else if(info.ext==='xlsx' || info.ext==='xls'){ const sheets = await parseExcelFile(info.file); if(!sheets.length){ ctx.diag.push('[WARN] empty workbook'); continue; } for(const sheet of sheets){ ctx.diag.push(`  [INFO] sheet ${sheet.name}`); takeArrayCandidates(ctx, {path:`${info.path}:${sheet.name}`}, sheet.rows); } continue; }
+        else if(info.ext==='kml' || info.ext==='kmz'){ ctx.pendingGeom.push({ kind: info.ext, info }); ctx.diag.push('[GEOM] KML/KMZ queued for geo ingest'); continue; }
+        else if(['shp','dbf','shx','prj','cpg'].includes(info.ext)){ ctx.pendingGeom.push({ kind:'shapefile', info }); continue; }
+        else if(info.ext==='txt'){ const txt = await info.file.text(); const parsed = tryParse(txt); if(parsed && typeof parsed==='object'){ if(handleJsonStructure(ctx, info, parsed)) continue; if(Array.isArray(parsed)) { takeArrayCandidates(ctx, info, parsed); continue; } }
         }
       }catch(err){
         ctx.diag.push(`  [WARN] ingest error: ${err.message}`);
@@ -1293,36 +1105,8 @@
       }
     }
     await ingestGeometry(ctx);
-    const summaryParts=[];
-    for(const kind of ['council','agency','backlog','fast']){
-      const best = ctx.best[kind];
-      if(best.score>-Infinity){
-        summaryParts.push(`${kind}: ${best.rows} rows (${best.source})`);
-      }
-    }
-    if(ctx.geomSummary?.parcel){
-      summaryParts.push(`parcel: ~${Math.round(ctx.geomSummary.parcel.area)} sqm (${ctx.geomSummary.parcel.source})`);
-    }
-    if(ctx.geomSummary?.overlays){
-      summaryParts.push(`overlays: ${ctx.geomSummary.overlays.count} (~${Math.round(ctx.geomSummary.overlays.area)} sqm)`);
-    }
-    if(ctx.pendingGeom.length){
-      summaryParts.push(`geo pending: ${ctx.pendingGeom.length}`);
-    }
-    $('#ingestSummary').textContent = summaryParts.length ? summaryParts.join(' | ') : 'No structured datasets detected.';
-    $('#ingestDiagnostics').textContent = ctx.diag.join('\n');
-    if(ctx.updated.size){
-      refreshAges();
-      updateInsightsFromStore();
-      stampInsightUpdate();
-      notify('ok','Bulk ingest updated ' + Array.from(ctx.updated).join(', '));
-    } else if(ctx.pendingGeom.length){
-      notify('warn','Tabular ingest complete. Geometry queued for processing.');
-    } else {
-      notify('warn','No ingestable datasets detected.');
-    }
-    return ctx;
-  }
+    let summaryParts=[];
+    if(ctx.geomSummary?.parcel){ summaryParts.push(parcel: ~ sqm ()); }\r\n    if(ctx.geomSummary?.overlays){ summaryParts.push(overlays:  (~ sqm)); }\r\n  }
   async function runUpdater(manifest){
     log('— Update start —', new Date().toLocaleString());
     const out = { ok:[], fail:[] };
