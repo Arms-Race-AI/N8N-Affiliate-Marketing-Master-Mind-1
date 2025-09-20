@@ -354,6 +354,7 @@
               <option value="0.5">0.5 m</option>
             </select>
             <button class="btn btn-gold" id="calcBuildable">Compute Buildable</button>
+            <button class="btn" id="cancelBuildable">Cancel Compute</button>
             <button class="btn" id="clearOverlays">Clear Overlays</button>
           </div>
         </div>
@@ -1165,6 +1166,8 @@
         ctx.errors.push(`${info.path}: ${err.message}`);
       }
     }
+    // Ingest any queued geometry types (KML/KMZ/Shapefile)
+    await ingestGeometry(ctx);
     // Summarize ingest
     const updatedKinds = Array.from(ctx.updated);
     const summaryParts=[];
@@ -1175,6 +1178,96 @@
     $('#ingestDiagnostics').textContent = ctx.diag.join('\\n');
     refreshAges();
     notify('ok','Ingest complete.');
+  }
+  async function ingestGeometry(ctx){
+    try{
+      const polySets = [];
+      const diag = ctx.diag;
+      const pushGeoJSON = (gj, label)=>{
+        try{
+          if(!gj) return;
+          let fc = gj;
+          if(gj.type==='Feature') fc = {type:'FeatureCollection', features:[gj]};
+          if(fc.type!=='FeatureCollection' || !Array.isArray(fc.features)) return;
+          const polys = flattenFeatures(fc);
+          if(polys && polys.length){ polySets.push({ label, polys }); diag.push(`[GEOM] ${label}: ${polys.length} polygon set(s)`); }
+        }catch(err){ diag.push(`[WARN] geom flatten failed (${label}): ${err.message}`); }
+      };
+      // Group shapefile parts by origin or basename
+      const shpGroups = new Map();
+      for(const item of ctx.pendingGeom){
+        if(item.kind==='kml'){
+          const text = await item.info.file.text();
+          const dom = new DOMParser().parseFromString(text,'text/xml');
+          const gj = (window.toGeoJSON && window.toGeoJSON.kml)? window.toGeoJSON.kml(dom) : null;
+          if(!gj){ diag.push('[WARN] toGeoJSON.kml not available'); continue; }
+          pushGeoJSON(gj, item.info.path);
+        } else if(item.kind==='kmz'){
+          try{
+            if(!window.JSZip){ diag.push('[WARN] JSZip missing for KMZ'); continue; }
+            const zip = await JSZip.loadAsync(await item.info.file.arrayBuffer());
+            const entries = Object.values(zip.files||{});
+            const kmlEntry = entries.find(e=> !e.dir && e.name.toLowerCase().endsWith('.kml'));
+            if(!kmlEntry){ diag.push(`[WARN] no .kml found inside KMZ ${item.info.path}`); continue; }
+            const text = await kmlEntry.async('text');
+            const dom = new DOMParser().parseFromString(text,'text/xml');
+            const gj = (window.toGeoJSON && window.toGeoJSON.kml)? window.toGeoJSON.kml(dom) : null;
+            if(!gj){ diag.push('[WARN] toGeoJSON.kml not available for KMZ'); continue; }
+            pushGeoJSON(gj, `${item.info.path}::${kmlEntry.name}`);
+          }catch(err){ diag.push(`[WARN] KMZ read failed ${item.info.path}: ${err.message}`); }
+        } else if(item.kind==='shapefile'){
+          const origin = String(item.info.origin||'').startsWith('zip:')? String(item.info.origin) : null;
+          let key;
+          if(origin){ key = origin; }
+          else {
+            const p = String(item.info.path||item.info.name||'');
+            key = p.replace(/\.[^\.\/]+$/,'');
+          }
+          if(!shpGroups.has(key)) shpGroups.set(key, []);
+          shpGroups.get(key).push(item.info);
+        }
+      }
+      // Process shapefile groups
+      for(const [key, files] of shpGroups.entries()){
+        try{
+          if(!(window.shp && typeof window.shp==='function')){ diag.push('[WARN] shp parser not available'); continue; }
+          if(!window.JSZip){ diag.push('[WARN] JSZip missing for Shapefile'); continue; }
+          const zipper = new JSZip();
+          for(const f of files){
+            const data = new Uint8Array(await f.file.arrayBuffer());
+            const name = f.name || f.path || 'part.bin';
+            zipper.file(name.split('/').pop(), data);
+          }
+          const zipped = await zipper.generateAsync({type:'arraybuffer'});
+          const gj = await window.shp(zipped);
+          pushGeoJSON(gj, `shp:${key}`);
+        }catch(err){ diag.push(`[WARN] shapefile group failed (${key}): ${err.message}`); }
+      }
+
+      if(!polySets.length){ diag.push('[GEOM] no polygon sets derived'); return; }
+
+      // Choose parcel = largest area set; others = overlays
+      const areas = polySets.map(s=> s.polys.reduce((a,p)=> a + areaOfPolyMeters(p), 0));
+      let maxIdx = 0; for(let i=1;i<areas.length;i++){ if(areas[i] > areas[maxIdx]) maxIdx = i; }
+      const parcelPolys = polySets[maxIdx].polys;
+      const overlayPolys = polySets.filter((_,i)=> i!==maxIdx).map(s=> s.polys);
+      parcelGeom = parcelPolys;
+      overlayGeoms = overlayPolys;
+      store.put(LSK.parcel, parcelGeom);
+      store.put(LSK.overlays, overlayGeoms);
+      setViewFromPolys();
+      redraw();
+      const parcelArea = parcelPolys.reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+      const overlayArea = overlayPolys.flat().reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+      $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
+      $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
+      $('#overlayStatus').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} m² · Overlays ${Math.round(overlayArea).toLocaleString('en-AU')} m²`;
+      ctx.geomSummary = { parcel: parcelArea, overlays: overlayArea };
+      diag.push('[GEOM] geometry applied to canvas and store');
+    }catch(err){
+      ctx.diag.push('[ERROR] ingestGeometry: '+err.message);
+      notify('danger','Geometry ingest error: '+err.message);
+    }
   }
   async function runUpdater(manifest){
     log('— Update start —', new Date().toLocaleString());
@@ -1207,13 +1300,16 @@
     try{
       const pack = tryParse(await f.text());
       if(!pack||typeof pack!=='object') throw new Error('Invalid pack JSON');
-      if(pack.council) store.put(LSK.council, normCouncil(pack.council));
-      if(pack.agency)  store.put(LSK.agency,  normAgency(pack.agency));
-      if(pack.backlog) store.put(LSK.backlog, normBacklog(pack.backlog));
-      if(pack.fast)    store.put(LSK.fast,    normFast(pack.fast));
+      // Optional checksum validation if present
+      const checks = pack.checksums || {};
+      const warn = [];
+      if(pack.council){ const c = normCouncil(pack.council); const sum = crc32(JSON.stringify(c)).toString(16); if(checks.council && checks.council!==sum) warn.push('council'); store.put(LSK.council, c); }
+      if(pack.agency){  const a = normAgency(pack.agency); const sum = crc32(JSON.stringify(a)).toString(16); if(checks.agency && checks.agency!==sum) warn.push('agency'); store.put(LSK.agency, a); }
+      if(pack.backlog){ const b = normBacklog(pack.backlog); const sum = crc32(JSON.stringify(b)).toString(16); if(checks.backlog && checks.backlog!==sum) warn.push('backlog'); store.put(LSK.backlog, b); }
+      if(pack.fast){    const f = normFast(pack.fast); const sum = crc32(JSON.stringify(f)).toString(16); if(checks.fast && checks.fast!==sum) warn.push('fast'); store.put(LSK.fast, f); }
       refreshAges();
-      log('pack import ok');
-      notify('ok','Data pack imported.');
+      if(warn.length){ log('pack import ok with checksum warnings: '+warn.join(',')); notify('warn','Pack imported, checksum mismatch for: '+warn.join(', ')); }
+      else { log('pack import ok'); notify('ok','Data pack imported.'); }
       stampInsightUpdate();
     }catch(err){
       notify('danger','Pack import failed: '+err.message);
@@ -1272,6 +1368,24 @@
   function setViewFromPolys(){ const polys=[...(parcelGeom||[]), ...overlayGeoms.flat()]; if(!polys.length){ view=null; ctx.clearRect(0,0,canvas.width,canvas.height); return; } const bb=bboxOfPolys(polys); const pad=0.05; const width=bb.maxx-bb.minx, height=bb.maxy-bb.miny; view={ minx:bb.minx-width*pad, maxx:bb.maxx+width*pad, miny:bb.miny-height*pad, maxy:bb.maxy+height*pad }; }
   function toCanvas(x,y){ if(!view){ return [0,0]; } const w=view.maxx-view.minx, h=view.maxy-view.miny; const cx = (x-view.minx)/w * canvas.width; const cy = canvas.height - (y-view.miny)/h * canvas.height; return [cx,cy]; }
   function redraw(){ ctx.clearRect(0,0,canvas.width,canvas.height); if(!view) return; ctx.save(); ctx.strokeStyle='#1a2432'; ctx.lineWidth=1; for(let i=0;i<canvas.width;i+=64){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); } for(let j=0;j<canvas.height;j+=64){ ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); } ctx.restore(); if(overlayGeoms.length) drawPolys(overlayGeoms.flat(), '#ff5a5a', true); if(parcelGeom) drawPolys(parcelGeom, '#2ecc71', false); }
+  function rehydrateGeometryFromStore(){
+    try{
+      const p = store.get(LSK.parcel);
+      const o = store.get(LSK.overlays);
+      if((p && p.length) || (o && o.length)){
+        parcelGeom = Array.isArray(p)? p : null;
+        overlayGeoms = Array.isArray(o)? o : [];
+        setViewFromPolys();
+        redraw();
+        const parcelArea = (parcelGeom||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+        const overlayArea = (overlayGeoms.flat()||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+        if(parcelArea){ $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(parcelArea); }
+        if(overlayArea){ $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU'); }
+        $('#overlayStatus').textContent = 'Recovered last geometry from session.';
+        notify('ok','Recovered geometry from last session.');
+      }
+    }catch(e){ /* ignore */ }
+  }
   $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); $('#overlayStatus').textContent = 'Parcel loaded: '+f.name+' • area '+Math.round(area)+' m²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
   $('#overlayFiles').addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); let total=0; overlayGeoms=[]; try{ for(const f of files){ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) continue; overlayGeoms.push(polys); total += polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); } store.put(LSK.overlays, overlayGeoms); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent = Math.round(total).toLocaleString('en-AU'); $('#overlayStatus').textContent = 'Loaded '+files.length+' overlay file(s)'; notify('ok','Overlay set updated.'); stampInsightUpdate(); }catch(err){ notify('danger','Overlay load failed: '+err.message); } });
   $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent='—'; $('#overlayStatus').textContent='Overlays cleared.'; });
@@ -1310,7 +1424,8 @@
       postMessage({type:'done', out});
     };
   `;
-  const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'})));
+  let worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'})));
+  function attachWorkerHandlers(){
   worker.onmessage = (ev)=>{
     if(ev.data.type==='progress'){
       $('#overlayStatus').textContent = `Computing… ${Math.round(100*ev.data.j/ev.data.height)}%`;
@@ -1328,6 +1443,9 @@
       stampInsightUpdate();
     }
   };
+  worker.onerror = (e)=>{ $('#overlayStatus').textContent = 'Worker error: '+(e.message||'unknown'); notify('danger','Buildable worker error: '+(e.message||'unknown')); };
+  }
+  attachWorkerHandlers();
   $('#calcBuildable').addEventListener('click', ()=>{
     if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel GeoJSON first.'); return; }
     const resMeters = parseFloat($('#resSelect').value);
@@ -1337,6 +1455,7 @@
     $('#overlayStatus').textContent = 'Computing…';
     worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
   });
+  $('#cancelBuildable').addEventListener('click', ()=>{ try{ worker.terminate(); }catch{}; worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'}))); attachWorkerHandlers(); $('#overlayStatus').textContent = 'Computation cancelled.'; notify('warn','Buildable compute cancelled.'); });
   function loadDemoScenario(){
     try{
       store.put(LSK.council, BUILTIN_SAMPLE.council);
@@ -1503,6 +1622,7 @@
   }
   bindPersistentFields();
   refreshAges();
+  rehydrateGeometryFromStore();
   runTimingAuto();
   runFeasAuto();
   (async function startup(){ if(store.get(LSK.policyAllowNet)) { try{ await runUpdater(activeManifest()); notify('ok','Startup refresh complete.'); }catch(e){ log('startup updater failed:', e.message); notify('warn','Startup refresh failed: '+e.message); } } })();
