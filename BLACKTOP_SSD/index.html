@@ -31,6 +31,19 @@
     .quick-link{position:relative;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:rgba(17,25,44,.9);border:1px solid rgba(95,119,190,.4);color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
     .quick-link::after{content:"→";font-size:12px;transition:transform .25s ease}
     .quick-link:hover::after{transform:translateX(4px)}
+    /* Simple mode for larger fonts and fewer controls */
+    body.simple{font-size:18px}
+    body.simple .btn{padding:14px 18px;font-size:14px}
+    body.simple .helper{font-size:13px}
+    body.simple .advanced{display:none !important}
+    /* Guided overlay */
+    .guide{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:99}
+    .guide.active{display:flex}
+    .guide-panel{width:min(760px,92vw);background:var(--panel-strong);border:1px solid var(--border-strong);border-radius:20px;box-shadow:var(--shadow);padding:20px}
+    .guide-panel h2{margin:0 0 6px}
+    .guide-steps{display:grid;gap:10px;margin-top:6px}
+    .guide-steps .row{grid-template-columns:1fr auto}
+    .guide-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
     .topbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
     .command-ribbon{position:relative;padding:18px;border-radius:32px;background:linear-gradient(140deg,rgba(17,27,46,.82),rgba(9,14,26,.92));border:1px solid rgba(82,112,180,.55);box-shadow:0 40px 90px rgba(6,12,28,.55);overflow:hidden}
     .command-ribbon::before{content:"";position:absolute;inset:-30% -40%;background:radial-gradient(circle at 80% 30%,rgba(95,208,255,.18),transparent 60%);opacity:.75;pointer-events:none}
@@ -152,6 +165,60 @@
     <div class="stellar__grid"></div>
   </div>
   <div class="wrap">
+    <!-- Guided Setup Overlay -->
+    <div class="guide" id="guideOverlay" aria-hidden="true">
+      <div class="guide-panel">
+        <h2>Guided Setup</h2>
+        <div class="helper">Follow these steps. We'll prompt for files when needed.</div>
+        <div class="guide-steps">
+          <div class="row">
+            <div>
+              <b>1. Load Data Files</b>
+              <div class="helper">CSV, Excel, JSON or a packed Data Pack</div>
+            </div>
+            <button class="btn" id="guidePickData">Pick Files</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>2. Load Parcel</b>
+              <div class="helper">GeoJSON, KML/KMZ, or Shapefile (.zip)</div>
+            </div>
+            <button class="btn" id="guidePickParcel">Pick Parcel</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>3. Load Overlays (optional)</b>
+              <div class="helper">Constraints/overlays as GeoJSON/KML/KMZ/Shape</div>
+            </div>
+            <button class="btn" id="guidePickOverlays">Pick Overlays</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>4. Compute Buildable</b>
+              <div class="helper">Runs the engine and fills areas</div>
+            </div>
+            <button class="btn btn-gold" id="guideCompute">Compute</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>5. Run Timing &amp; Feasibility</b>
+              <div class="helper">Forecast approval time and economics</div>
+            </div>
+            <button class="btn" id="guideAnalyze">Analyze</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>6. Generate Report</b>
+              <div class="helper">Opens a printable briefing</div>
+            </div>
+            <button class="btn btn-prim" id="guideReport">Open Report</button>
+          </div>
+        </div>
+        <div class="guide-actions">
+          <button class="btn" id="guideClose">Close</button>
+        </div>
+      </div>
+    </div>
     <header class="brand command-headline">
       <div class="brand-core">
         <span class="crest">
@@ -189,9 +256,11 @@
         <h3>Executive Actions</h3>
         <div class="action-stack">
           <button class="btn btn-gold" id="loadDemo">Load Demo Scenario</button>
+          <button class="btn" id="guidedSetup">Guided Setup</button>
+          <button class="btn" id="runAll">Run All</button>
           <button class="btn btn-prim" id="quickReport">Instant Report</button>
         </div>
-        <div class="helper">Demo data showcases full workflow end-to-end.</div>
+        <div class="helper">Use Guided Setup for a simple, step-by-step flow.</div>
       </div>
     </div>
     <section class="hero-grid">
@@ -284,9 +353,9 @@
           </div>
           <div class="action-row">
             <label class="toggle"><input type="checkbox" id="allowNet"> Allow network refresh at startup</label>
-            <button class="btn" id="runUpdate">Run Update</button>
-            <button class="btn" id="exportPack">Export Data Pack</button>
-            <button class="btn" id="saveLog">Save Log</button>
+            <button class="btn advanced" id="runUpdate">Run Update</button>
+            <button class="btn advanced" id="exportPack">Export Data Pack</button>
+            <button class="btn advanced" id="saveLog">Save Log</button>
           </div>
         </div>
         <div class="row-3">
@@ -314,7 +383,7 @@
             <pre class="mono" id="ingestDiagnostics"></pre>
           </div>
         </div>
-        <div class="status-grid">
+        <div class="status-grid advanced">
           <div class="status-chip" id="statusCouncil" data-state="warn">
             <span class="title">Council timing</span>
             <span class="value" id="ageCouncil">—</span>
@@ -391,7 +460,7 @@
           <button class="btn btn-gold" id="runTiming">Run Timing Model</button>
         </div>
         <div class="row">
-          <div><label>Council (LGA) Name</label><input id="councilName" placeholder="e.g. Liverpool City" /></div>
+          <div><label>Council (LGA) Name</label><input id="councilName" placeholder="e.g. Liverpool City" list="councilList" /></div>
           <div><label>Project Type</label>
             <select id="projectType">
               <option value="subdivision">Subdivision</option>
@@ -461,6 +530,7 @@
           <button class="btn" id="selfTest">Run Self Check</button>
           <button class="btn btn-danger" id="clearLocal">Purge Local Cache</button>
         </div>
+        <datalist id="councilList"></datalist>
       </div>
       <div class="foot">BLACKTOP runs offline, with deterministic compute and exportable evidence trails.</div>
     </section>
@@ -502,6 +572,10 @@
   }
   function debounce(fn, wait=400){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
   const sessionLog = [];
+  // Simple mode state
+  const SIMPLE_KEY = 'bt_simple_mode';
+  function applySimpleMode(on){ document.body.classList.toggle('simple', !!on); try{ localStorage.setItem(SIMPLE_KEY, on? '1':'0'); }catch{} }
+  applySimpleMode(localStorage.getItem(SIMPLE_KEY)!=='0');
   function pushSessionLog(entry){ sessionLog.unshift({ts:new Date(), entry}); if(sessionLog.length>6) sessionLog.length=6; updateInsightNotes(); }
   const nowISO = () => new Date().toISOString();
   const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : '—';
@@ -709,6 +783,18 @@
       $('#buildableArea').value = Math.round(build.buildableArea);
     }
     updateInsightNotes();
+    populateCouncilDatalist();
+  }
+  function populateCouncilDatalist(){
+    try{
+      const list = document.getElementById('councilList');
+      const inp = document.getElementById('councilName');
+      if(!list || !inp) return;
+      const c = store.get(LSK.council);
+      const names = (c?.councils||[]).map(x=> x.name).filter(Boolean);
+      list.innerHTML = names.map(n=> `<option value="${n.replace(/&/g,'&amp;')}"></option>`).join('');
+      if(!inp.value && names.length){ inp.value = names[0]; }
+    }catch{}
   }
   function stampInsightUpdate(){ const tag=$('#insightUpdated'); if(tag) setTag(tag, 'ok', 'Updated '+new Date().toLocaleTimeString()); }
   const refreshAges = ()=>{ updateDatasetBadges(); updateInsightsFromStore(); };
@@ -1632,6 +1718,37 @@
   $('#exportReport').addEventListener('click', ()=>{ if(exportPrintable()) stampInsightUpdate(); });
   $('#quickReport').addEventListener('click', ()=>{ if(exportPrintable()) stampInsightUpdate(); });
   $('#loadDemo').addEventListener('click', loadDemoScenario);
+  // Guided Setup overlay controls
+  function openGuide(){ const el=$('#guideOverlay'); if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
+  function closeGuide(){ const el=$('#guideOverlay'); if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
+  $('#guidedSetup').addEventListener('click', openGuide);
+  $('#guideClose').addEventListener('click', closeGuide);
+  $('#guidePickData').addEventListener('click', ()=>{ $('#ingestAny')?.click(); notify('ok','Pick your data files (CSV/Excel/JSON).'); });
+  $('#guidePickParcel').addEventListener('click', ()=>{ $('#parcelFile')?.click(); notify('ok','Pick your parcel geometry file.'); });
+  $('#guidePickOverlays').addEventListener('click', ()=>{ $('#overlayFiles')?.click(); notify('ok','Pick one or more overlay files.'); });
+  $('#guideCompute').addEventListener('click', ()=>{ $('#calcBuildable')?.click(); closeGuide(); });
+  $('#guideAnalyze').addEventListener('click', ()=>{ try{ $('#runTiming')?.click(); $('#runFeas')?.click(); closeGuide(); }catch{} });
+  $('#guideReport').addEventListener('click', ()=>{ $('#quickReport')?.click(); closeGuide(); });
+  // Run All orchestration
+  async function runAll(){
+    try{
+      if(!store.get(LSK.council)){ notify('warn','Load your data files first (Guided Setup).'); openGuide(); return; }
+      if(!parcelGeom || !parcelGeom.length){ notify('warn','Pick a parcel file first (Guided Setup).'); openGuide(); return; }
+      $('#resSelect').value = $('#resSelect').value || '1';
+      const parcel = parcelGeom?.[0]; const overlaysFlat = overlayGeoms.flat(); if(!parcel){ notify('danger','Parcel missing'); return; }
+      const done = new Promise((res, rej)=>{
+        const prev = worker.onmessage; worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
+        worker.onerror = (e)=>{ rej(e); };
+      });
+      $('#overlayStatus').textContent = 'Computing…'; worker.postMessage({parcel, overlays: overlaysFlat, resMeters: parseFloat($('#resSelect').value)||1});
+      await done;
+      $('#runTiming')?.click();
+      $('#runFeas')?.click();
+      $('#quickReport')?.click();
+      notify('ok','Run All complete.');
+    }catch(e){ notify('danger','Run All error: '+(e.message||e)); }
+  }
+  $('#runAll').addEventListener('click', ()=>{ runAll(); });
   $('#selfTest').addEventListener('click', async ()=>{
     try{
       loadDemoScenario();
