@@ -429,6 +429,7 @@
             <option value="vector">Exact (vector)</option>
           </select>
           <button class="btn btn-gold" id="calcBuildable">Compute Buildable</button>
+          <button class="btn" id="compareModes">Compare Modes</button>
           <button class="btn" id="cancelBuildable">Cancel Compute</button>
           <button class="btn" id="clearOverlays">Clear Overlays</button>
         </div>
@@ -453,6 +454,10 @@
           <div id="overlayStatus" class="mono">idle</div>
         </div>
         <canvas id="mapCanvas" width="1024" height="420"></canvas>
+        <div class="pill" style="margin-top:8px">
+          <div class="t">Mode Comparison</div>
+          <div class="v" id="compareResult">-</div>
+        </div>
         <div class="foot">Offline geometry: projected to Web Mercator meters, rasterized at selected grid. Deterministic, bounded error <= cell_area x perimeter_factor. Computation runs in a worker for stability.</div>
       </article>
     </section>
@@ -1335,8 +1340,13 @@
             zipper.file(name.split('/').pop(), data);
           }
           const zipped = await zipper.generateAsync({type:'arraybuffer'});
+          // Attempt to read PRJ for reprojection hints
+          let prjText=null;
+          for(const f of files){ const n=(f.name||f.path||'').toLowerCase(); if(n.endsWith('.prj')){ try{ prjText = await f.file.text(); }catch{} } }
           const gj = await window.shp(zipped);
-          pushGeoJSON(gj, `shp:${key}`);
+          const fromDef = projFromPrjText(prjText);
+          const repro = fromDef? reprojectGeoJSON(gj, fromDef) : gj;
+          pushGeoJSON(repro, `shp:${key}`);
         }catch(err){ diag.push(`[WARN] shapefile group failed (${key}): ${err.message}`); }
       }
 
@@ -1533,7 +1543,7 @@
       $('#buildableArea').value = Math.round(buildableArea);
       const status = `OK â€” cell ${cellMeters} m; parcel=${Math.round(parcelArea)} mÂ²; overlay=${Math.round(overlayArea)} mÂ²; buildable=${Math.round(buildableArea)} mÂ²`;
       $('#overlayStatus').textContent = status;
-      store.put(LSK.buildable, {ts: nowISO(), cellMeters, parcelArea, overlayArea, buildableArea});
+      store.put(LSK.buildable, {ts: nowISO(), method:'grid', cellMeters, parcelArea, overlayArea, buildableArea});
       #insightBuildable.textContent = Math.round(build.buildableArea).toLocaleString('en-AU') + ' m² buildable';
       #insightBuildableMeta.textContent = 'Parcel ' + Math.round(build.parcelArea).toLocaleString('en-AU') + ' m² - cell ' + build.cellMeters + ' m';
       stampInsightUpdate();
@@ -1542,14 +1552,40 @@
   worker.onerror = (e)=>{ $('#overlayStatus').textContent = 'Worker error: '+(e.message||'unknown'); notify('danger','Buildable worker error: '+(e.message||'unknown')); };
   }
   attachWorkerHandlers();
-  $('#calcBuildable').addEventListener('click', ()=>{
-    if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel GeoJSON first.'); return; }
-    const resMeters = parseFloat($('#resSelect').value);
+  #calcBuildable.addEventListener('click', ()=>{
+  if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel GeoJSON first.'); return; }
+  const resMeters = parseFloat(#resSelect.value);
+  const parcel = parcelGeom[0];
+  const overlaysFlat = overlayGeoms.flat();
+  if(!parcel){ notify('danger','Parcel polygon missing.'); return; }
+  const mode = (#computeMode?.value)||'grid';
+  if(mode==='vector'){
+    computeExactBuildable();
+  } else {
+    #overlayStatus.textContent = 'Computing.';
+    worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
+  }
+});
+#compareModes.addEventListener('click', async ()=>{
+  try{
+    if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel first.'); return; }
+    const resMeters = parseFloat(#resSelect.value)||1;
     const parcel = parcelGeom[0];
     const overlaysFlat = overlayGeoms.flat();
-    if(!parcel){ notify('danger','Parcel polygon missing.'); return; }
-    $('#overlayStatus').textContent = 'Computingâ€¦';
+    const done = new Promise((res, rej)=>{ const prev = worker.onmessage; worker.onmessage=(ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(ev.data.out); }; worker.onerror=(e)=>rej(e); });
+    #overlayStatus.textContent = 'Computing.';
     worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
+    const gridOut = await done;
+    const ok = computeExactBuildable();
+    if(!ok){ notify('warn','Exact compute failed.'); return; }
+    const exact = store.get(LSK.buildable);
+    const a = gridOut?.buildableArea||0, b = exact?.buildableArea||0;
+    const delta = a? ((b-a)/a)*100 : 0;
+    const rec = Math.abs(delta)>1 ? 'Exact' : 'Grid';
+    #compareResult.textContent = Grid  m² vs Exact  m² (%). Recommended: ;
+    notify('ok','Comparison complete.');
+  }catch(e){ notify('danger','Compare error: '+(e.message||e)); }
+});
   });
   $('#cancelBuildable').addEventListener('click', ()=>{ try{ worker.terminate(); }catch{}; worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'}))); attachWorkerHandlers(); $('#overlayStatus').textContent = 'Computation cancelled.'; notify('warn','Buildable compute cancelled.'); });
   // ---- Vector Exact Buildable (martinez + Mercator) ----
@@ -1831,6 +1867,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
