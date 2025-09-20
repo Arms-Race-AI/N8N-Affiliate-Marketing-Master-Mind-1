@@ -1632,6 +1632,27 @@
   $('#exportReport').addEventListener('click', ()=>{ if(exportPrintable()) stampInsightUpdate(); });
   $('#quickReport').addEventListener('click', ()=>{ if(exportPrintable()) stampInsightUpdate(); });
   $('#loadDemo').addEventListener('click', loadDemoScenario);
+  $('#selfTest').addEventListener('click', async ()=>{
+    try{
+      loadDemoScenario();
+      await new Promise(r=> setTimeout(r, 350));
+      $('#resSelect').value = '1';
+      const parcel = parcelGeom?.[0];
+      const overlaysFlat = overlayGeoms.flat();
+      if(!parcel){ notify('danger','Self-check failed: parcel missing'); return; }
+      $('#overlayStatus').textContent = 'Computing…';
+      const done = new Promise((res, rej)=>{
+        const prev = worker.onmessage;
+        worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
+        worker.onerror = (e)=>{ rej(e); };
+      });
+      worker.postMessage({parcel, overlays: overlaysFlat, resMeters: 1});
+      await done;
+      runTimingAuto();
+      runFeasAuto();
+      notify('ok','Self-check completed.');
+    }catch(e){ notify('danger','Self-check error: '+(e.message||e)); }
+  });
   /************ HOUSEKEEPING ************/
   $('#clearLocal').addEventListener('click', async ()=>{ if(confirm('Clear cached datasets, geojsons, and last results?')){ await idbClear(); Object.values(LSK).forEach(store.del); notify('ok','Local cache cleared. Reloading…'); location.reload(); } });
 </script>
