@@ -578,7 +578,7 @@
   applySimpleMode(localStorage.getItem(SIMPLE_KEY)!=='0');
   function pushSessionLog(entry){ sessionLog.unshift({ts:new Date(), entry}); if(sessionLog.length>6) sessionLog.length=6; updateInsightNotes(); }
   const nowISO = () => new Date().toISOString();
-  const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : 'â€”';
+  const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : '-';
   const daysToMonths = d => d/30.4375;
   const log = (...a)=>{ const el=$('#upLog'); const line=a.join(' '); el.textContent += line+'\n'; el.scrollTop = el.scrollHeight; pushSessionLog(line); };
   const tryParse = (t)=>{ try{ return JSON.parse(t); }catch{ return null; } };
@@ -709,7 +709,7 @@
       el.addEventListener(evt, handler);
     }
   }
-  const ageFrom = obj => (!obj||!obj.lastUpdated)? 'â€”' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
+  const ageFrom = obj => (!obj||!obj.lastUpdated)? '-' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
   function updateOperatingMode(){ #operatingMode.textContent = store.get(LSK.policyAllowNet)? 'Offline - Startup refresh permitted' : 'Offline - Secure - Cached'; }
   const datasetFreshness = obj => {
     if(!obj) return {state:'warn', detail:'Not loaded', badge:'Awaiting dataset'};
@@ -1775,6 +1775,7 @@
 </script>
 </body>
 </html>
+
 
 
 
