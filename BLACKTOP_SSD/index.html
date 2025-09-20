@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>BLACKTOP Î“Ã‡Ã¶ TJ Command Deck (v0.9 Î“Ã‡Ã³ External SSD Î“Ã‡Ã³ Offline)</title>
+  <title>BLACKTOP — TJ Command Deck (v0.9 • External SSD • Offline)</title>
   <style>
     :root{--bg:#02050c;--bg-alt:#0b1324;--panel:rgba(13,21,40,.92);--panel-strong:rgba(18,28,52,.96);--panel-soft:rgba(18,26,45,.86);--border:rgba(92,118,178,.55);--border-strong:rgba(132,166,255,.75);--accent:#f9d66d;--accent-soft:#ffe7a3;--accent-halo:rgba(249,214,109,.28);--electric:#5fd0ff;--electric-soft:rgba(95,208,255,.24);--emerald:#38f3b6;--emerald-soft:rgba(56,243,182,.2);--crimson:#ff6b86;--text:#f7f9ff;--muted:#9aa9ce;--muted-soft:#6e7aa3;--muted-dim:#3f4a6d;--shadow:0 40px 90px rgba(3,8,25,.75);--radius:22px}
     *,*::before,*::after{box-sizing:border-box}
@@ -29,7 +29,7 @@
     .brand-meta .sub{padding:6px 12px;border-radius:999px;background:rgba(28,42,75,.6);border:1px solid rgba(92,118,178,.55);backdrop-filter:blur(6px);color:var(--muted)}
     .brand-controls{display:flex;flex-wrap:wrap;gap:12px}
     .quick-link{position:relative;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:rgba(17,25,44,.9);border:1px solid rgba(95,119,190,.4);color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-    .quick-link::after{content:"Î“Ã¥Ã†";font-size:12px;transition:transform .25s ease}
+    .quick-link::after{content:"→";font-size:12px;transition:transform .25s ease}
     .quick-link:hover::after{transform:translateX(4px)}
     .topbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
     .command-ribbon{position:relative;padding:18px;border-radius:32px;background:linear-gradient(140deg,rgba(17,27,46,.82),rgba(9,14,26,.92));border:1px solid rgba(82,112,180,.55);box-shadow:0 40px 90px rgba(6,12,28,.55);overflow:hidden}
@@ -158,10 +158,10 @@
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 17h5l4-10 4 10h5" stroke="#f9d66d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.8" fill="#f9d66d"/></svg>
         </span>
         <div>
-          <h1>BLACKTOP Î“Ã‡Ã¶ TJ Command Deck</h1>
+          <h1>BLACKTOP — TJ Command Deck</h1>
           <div class="brand-meta">
-            <span class="sub">External SSD Î“Ã‡Ã³ Offline-first intelligence</span>
-            <span class="sub">Version 0.9 â”¬â•– Production-tuned</span>
+            <span class="sub">External SSD • Offline-first intelligence</span>
+            <span class="sub">Version 0.9 · Production-tuned</span>
             <span class="sub">Evergreen release with quantum hardening</span>
           </div>
         </div>
@@ -177,7 +177,7 @@
     <div class="topbar command-ribbon">
       <div class="topcard">
         <h3>Operating Mode</h3>
-        <p id="operatingMode">Offline â”¬â•– Secure â”¬â•– Cached</p>
+        <p id="operatingMode">Offline · Secure · Cached</p>
         <div class="helper">No telemetry. All computation on-device.</div>
       </div>
       <div class="topcard">
@@ -199,7 +199,7 @@
         <header class="hero-head">
           <div>
             <p class="eyebrow">Flagship Briefing</p>
-            <h2>â‰¡Æ’Ã´Ãª Live Mission Intelligence</h2>
+            <h2>📈 Live Mission Intelligence</h2>
           </div>
           <div class="chip-group">
             <span class="tag" id="insightCompleteness">Datasets pending</span>
@@ -279,7 +279,7 @@
       <article class="card cathedral" id="dataOps">
         <div class="h">
           <div>
-            <h2>â‰¡Æ’Ã¶Ã¤ Data Engine &amp; Integrity</h2>
+            <h2>🔄 Data Engine &amp; Integrity</h2>
             <div class="helper">Load curated datasets, validate their freshness, and export signed packs for distribution.</div>
           </div>
           <div class="action-row">
@@ -317,22 +317,22 @@
         <div class="status-grid">
           <div class="status-chip" id="statusCouncil" data-state="warn">
             <span class="title">Council timing</span>
-            <span class="value" id="ageCouncil">Î“Ã‡Ã¶</span>
+            <span class="value" id="ageCouncil">—</span>
             <span class="detail" id="statusCouncilDetail">Not loaded</span>
           </div>
           <div class="status-chip" id="statusAgency" data-state="warn">
             <span class="title">Agency referral</span>
-            <span class="value" id="ageAgency">Î“Ã‡Ã¶</span>
+            <span class="value" id="ageAgency">—</span>
             <span class="detail" id="statusAgencyDetail">Not loaded</span>
           </div>
           <div class="status-chip" id="statusBacklog" data-state="warn">
             <span class="title">Backlog risk</span>
-            <span class="value" id="ageBacklog">Î“Ã‡Ã¶</span>
+            <span class="value" id="ageBacklog">—</span>
             <span class="detail" id="statusBacklogDetail">Not loaded</span>
           </div>
           <div class="status-chip" id="statusFast" data-state="warn">
             <span class="title">Fast-track rules</span>
-            <span class="value" id="ageFastTrack">Î“Ã‡Ã¶</span>
+            <span class="value" id="ageFastTrack">—</span>
             <span class="detail" id="statusFastDetail">Not loaded</span>
           </div>
         </div>
@@ -344,7 +344,7 @@
       <article class="card cathedral" id="overlayEngine">
         <div class="h">
           <div>
-            <h2>â‰¡Æ’Ã¹â•‘âˆ©â••Ã… Overlay &amp; Net Buildable Engine</h2>
+            <h2>🗺️ Overlay &amp; Net Buildable Engine</h2>
             <div class="helper">Project parcel + overlays into a high-resolution raster engine to derive deterministic buildable area.</div>
           </div>
           <div class="action-row">
@@ -368,23 +368,23 @@
           </div>
         </div>
         <div class="row" style="margin-top:8px">
-          <div class="pill"><div class="t">Parcel Area (mâ”¬â–“)</div><div class="v" id="parcelAreaVal">Î“Ã‡Ã¶</div></div>
-          <div class="pill"><div class="t">Overlay Area (mâ”¬â–“, union)</div><div class="v" id="overlayAreaVal">Î“Ã‡Ã¶</div></div>
-          <div class="pill"><div class="t">Buildable Area (mâ”¬â–“)</div><div class="v" id="buildableAreaVal">Î“Ã‡Ã¶</div></div>
+          <div class="pill"><div class="t">Parcel Area (m²)</div><div class="v" id="parcelAreaVal">—</div></div>
+          <div class="pill"><div class="t">Overlay Area (m², union)</div><div class="v" id="overlayAreaVal">—</div></div>
+          <div class="pill"><div class="t">Buildable Area (m²)</div><div class="v" id="buildableAreaVal">—</div></div>
         </div>
         <div class="pill" style="margin-top:8px">
           <div class="t">Engine Status</div>
           <div id="overlayStatus" class="mono">idle</div>
         </div>
         <canvas id="mapCanvas" width="1024" height="420"></canvas>
-        <div class="foot">Offline geometry: projected to Web Mercator meters, rasterized at selected grid. Deterministic, bounded error &lt;= cell_area â”¬â•– perimeter_factor. Computation runs in a worker for stability.</div>
+        <div class="foot">Offline geometry: projected to Web Mercator meters, rasterized at selected grid. Deterministic, bounded error &lt;= cell_area · perimeter_factor. Computation runs in a worker for stability.</div>
       </article>
     </section>
     <section class="macro-grid">
       <article class="card" id="timingPanel">
         <div class="h">
           <div>
-            <h2>Î“Ã…â–’âˆ©â••Ã… Approval Timing &amp; Risk</h2>
+            <h2>⏱️ Approval Timing &amp; Risk</h2>
             <div class="helper">Blend council intelligence, referral lag, and backlog stressors to forecast determination timing.</div>
           </div>
           <button class="btn btn-gold" id="runTiming">Run Timing Model</button>
@@ -406,8 +406,8 @@
         </div>
         <div class="pill" style="margin-top:10px">
           <div class="t">Prediction</div>
-          <div class="v" id="timingSummary">Î“Ã‡Ã¶</div>
-          <div class="status warn" id="timingStatus">Awaiting dataÎ“Ã‡Âª</div>
+          <div class="v" id="timingSummary">—</div>
+          <div class="status warn" id="timingStatus">Awaiting data…</div>
         </div>
         <details style="margin-top:8px"><summary>Data Provenance</summary>
           <pre id="timingProv" class="mono"></pre>
@@ -416,14 +416,14 @@
       <article class="card" id="feasPanel">
         <div class="h">
           <div>
-            <h2>â‰¡Æ’Ã´Ã¨ Feasibility Economics</h2>
+            <h2>📊 Feasibility Economics</h2>
             <div class="helper">Stress-test the deal with holding, contingency, and yield metrics linked to timing outputs.</div>
           </div>
           <button class="btn btn-gold" id="runFeas">Run Feasibility</button>
         </div>
         <div class="row">
-          <div><label>Parcel Area (mâ”¬â–“)</label><input id="parcelArea" type="number" step="1" min="0" /></div>
-          <div><label>Net Buildable Area (mâ”¬â–“)</label><input id="buildableArea" type="number" step="1" min="0" /></div>
+          <div><label>Parcel Area (m²)</label><input id="parcelArea" type="number" step="1" min="0" /></div>
+          <div><label>Net Buildable Area (m²)</label><input id="buildableArea" type="number" step="1" min="0" /></div>
         </div>
         <div class="row" style="margin-top:8px">
           <div><label>Target Lots / Dwellings</label><input id="lots" type="number" step="1" min="0" /></div>
@@ -438,9 +438,9 @@
           <div><label>Contingency (%)</label><input id="contingency" type="number" step="0.5" min="0" /></div>
         </div>
         <div class="kpi" style="margin-top:10px">
-          <div class="pill"><div class="t">Revenue (AUD)</div><div class="v" id="kRev">Î“Ã‡Ã¶</div></div>
-          <div class="pill"><div class="t">Total Cost (AUD)</div><div class="v" id="kCost">Î“Ã‡Ã¶</div></div>
-          <div class="pill"><div class="t">Net Profit (AUD)</div><div class="v" id="kProfit">Î“Ã‡Ã¶</div></div>
+          <div class="pill"><div class="t">Revenue (AUD)</div><div class="v" id="kRev">—</div></div>
+          <div class="pill"><div class="t">Total Cost (AUD)</div><div class="v" id="kCost">—</div></div>
+          <div class="pill"><div class="t">Net Profit (AUD)</div><div class="v" id="kProfit">—</div></div>
         </div>
         <details style="margin-top:8px"><summary>Feasibility Breakdown</summary>
           <pre id="feasDetail" class="mono"></pre>
@@ -453,14 +453,14 @@
     <section class="card" id="controlDeck">
       <div class="h">
         <div>
-          <h2>â‰¡Æ’Ã¶Ã† Data Health &amp; Controls</h2>
+          <h2>🔒 Data Health &amp; Controls</h2>
           <div class="helper">All artefacts reside on this device. Purge cache to reset and reload trusted packs.</div>
         </div>
         <button class="btn btn-danger" id="clearLocal">Purge Local Cache</button>
       </div>
       <div class="foot">BLACKTOP runs offline, with deterministic compute and exportable evidence trails.</div>
     </section>
-    <div class="foot brand-foot">BLACKTOP â”¬âŒ Î“Ã‡Ã¶ External SSD mode. Offline-first. Production brief tooling built for TJ.</div>
+    <div class="foot brand-foot">BLACKTOP © — External SSD mode. Offline-first. Production brief tooling built for TJ.</div>
   </div>
   <div class="toast-stack" id="toastStack"></div>
   <script type="module">
@@ -500,7 +500,7 @@
   const sessionLog = [];
   function pushSessionLog(entry){ sessionLog.unshift({ts:new Date(), entry}); if(sessionLog.length>6) sessionLog.length=6; updateInsightNotes(); }
   const nowISO = () => new Date().toISOString();
-  const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : 'Î“Ã‡Ã¶';
+  const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : '—';
   const daysToMonths = d => d/30.4375;
   const log = (...a)=>{ const el=$('#upLog'); const line=a.join(' '); el.textContent += line+'\n'; el.scrollTop = el.scrollHeight; pushSessionLog(line); };
   const tryParse = (t)=>{ try{ return JSON.parse(t); }catch{ return null; } };
@@ -631,14 +631,14 @@
       el.addEventListener(evt, handler);
     }
   }
-  const ageFrom = obj => (!obj||!obj.lastUpdated)? 'Î“Ã‡Ã¶' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
-  function updateOperatingMode(){ $('#operatingMode').textContent = store.get(LSK.policyAllowNet)? 'Offline Î“Ã‡Ã³ Startup refresh permitted' : 'Offline â”¬â•– Secure â”¬â•– Cached'; }
+  const ageFrom = obj => (!obj||!obj.lastUpdated)? '—' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
+  function updateOperatingMode(){ $('#operatingMode').textContent = store.get(LSK.policyAllowNet)? 'Offline • Startup refresh permitted' : 'Offline · Secure · Cached'; }
   const datasetFreshness = obj => {
     if(!obj) return {state:'warn', detail:'Not loaded', badge:'Awaiting dataset'};
-    if(!obj.lastUpdated){ return {state:'warn', detail:'Custom import Î“Ã‡Ã³ verify metadata', badge:'Custom dataset'}; }
+    if(!obj.lastUpdated){ return {state:'warn', detail:'Custom import • verify metadata', badge:'Custom dataset'}; }
     const ageDays = Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000);
     const state = ageDays>365? 'danger' : ageDays>180? 'warn' : 'ok';
-    const version = obj.version? ` â”¬â•– ${obj.version}` : '';
+    const version = obj.version? ` · ${obj.version}` : '';
     return {state, detail:`Updated ${obj.lastUpdated}${version}`, badge:`${ageDays} days old`};
   };
   function setTag(el, state, text){ if(!el) return; el.textContent = text; el.className = 'tag'+(state? ' '+state : ''); }
@@ -681,24 +681,24 @@
     const el = $('#insightNotes');
     if(!el) return;
     if(!sessionLog.length){ el.textContent = 'No actions recorded yet.'; return; }
-    const lines = sessionLog.slice(0,3).map(item=> `${item.ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} Î“Ã‡Ã¶ ${item.entry}`);
+    const lines = sessionLog.slice(0,3).map(item=> `${item.ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — ${item.entry}`);
     el.textContent = lines.join('\n');
   }
   function updateInsightsFromStore(){
     const timing = store.get(LSK.lastTiming);
     if(timing){
       $('#insightTiming').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months)`;
-      $('#insightTimingMeta').textContent = `Risk ${timing.riskScore}/100 Î“Ã‡Ã³ ${timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'}`;
+      $('#insightTimingMeta').textContent = `Risk ${timing.riskScore}/100 • ${timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'}`;
       $('#timingSummary').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months). Risk ${timing.riskScore}/100. ${timing.fastTrackEligible? 'FAST-TRACK':'standard pathway'}`;
     }
     const feas = store.get(LSK.lastFeas);
     if(feas){
-      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; $('#insightFeasMeta').textContent = `Revenue ${fmtAUD(feas.revenue)} Î“Ã‡Ã³ Cost ${fmtAUD(feas.totalCost)}`;
+      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; $('#insightFeasMeta').textContent = `Revenue ${fmtAUD(feas.revenue)} • Cost ${fmtAUD(feas.totalCost)}`;
     }
     const build = store.get(LSK.buildable);
     if(build){
-      $('#insightBuildable').textContent = `${Math.round(build.buildableArea).toLocaleString('en-AU')} mâ”¬â–“ buildable`;
-      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(build.parcelArea).toLocaleString('en-AU')} mâ”¬â–“ Î“Ã‡Ã³ cell ${build.cellMeters} m`;
+      $('#insightBuildable').textContent = `${Math.round(build.buildableArea).toLocaleString('en-AU')} m² buildable`;
+      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(build.parcelArea).toLocaleString('en-AU')} m² • cell ${build.cellMeters} m`;
       $('#parcelAreaVal').textContent = Math.round(build.parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent = Math.round(build.overlayArea).toLocaleString('en-AU');
       $('#buildableAreaVal').textContent = Math.round(build.buildableArea).toLocaleString('en-AU');
@@ -987,6 +987,7 @@
     if(ext==='kml') return 'application/vnd.google-earth.kml+xml';
     if(ext==='kmz') return 'application/vnd.google-earth.kmz';
     if(ext==='zip') return 'application/zip';
+    if(ext==='html' || ext==='htm') return 'text/html';
     return '';
   }
   async function flattenIngestFiles(fileList, ctx){
@@ -1039,6 +1040,65 @@
     }
     return sheets;
   }
+  async function parseHtmlTables(file){
+    const text = await file.text();
+    const dom = new DOMParser().parseFromString(text,'text/html');
+    const tables = Array.from(dom.querySelectorAll('table'));
+    const out=[];
+    tables.forEach((table, index)=>{
+      const name = table.getAttribute('id') || table.getAttribute('data-name') || 	able_;
+      const headerCells = Array.from(table.querySelectorAll('thead tr th'));
+      let headers = headerCells.map(cell=> cell.textContent.trim()).filter(Boolean);
+      const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+      const allRows = bodyRows.length ? bodyRows : Array.from(table.querySelectorAll('tr'));
+      let startIndex = 0;
+      if(!headers.length && allRows.length){
+        headers = Array.from(allRows[0].children).map((cell,i)=> cell.textContent.trim() || col_);
+        if(!bodyRows.length && !headerCells.length) startIndex = 1;
+      }
+      const rows=[];
+      allRows.forEach((tr, rowIndex)=>{
+        if(rowIndex < startIndex) return;
+        const cells = Array.from(tr.children);
+        if(!headers.length){ headers = cells.map((_,i)=> col_); }
+        const row={};
+        headers.forEach((header,i)=>{ row[header || col_] = (cells[i]?.textContent || '').trim(); });
+        if(Object.values(row).some(v=> v)) rows.push(row);
+      });
+      if(headers.length && rows.length){ out.push({ name, rows }); }
+    });
+    return out;
+  }
+  function parseLooseText(text){
+    const cleaned = String(text||'').trim();
+    if(!cleaned) return [];
+    const firstPass = Papa.parse(cleaned, { header:true, skipEmptyLines:'greedy', delimiter:'' });
+    let rows = Array.isArray(firstPass.data)? firstPass.data.filter(r=> r && Object.values(r).some(v=> String(v??'').trim()!=='')) : [];
+    if(rows.length){
+      const sampleKeys = Object.keys(rows[0]).filter(k=> k && k!=='__parsed_extra');
+      if(sampleKeys.length>1){
+        return rows.map(row=>{
+          const out={};
+          for(const [key,val] of Object.entries(row)){
+            if(key==='__parsed_extra') continue;
+            out[key] = val;
+          }
+          return out;
+        });
+      }
+    }
+    const kvRows=[];
+    let current={};
+    const pushCurrent=()=>{ if(Object.keys(current).length){ kvRows.push(current); current={}; } };
+    cleaned.split(/\r?\n/).forEach(line=>{
+      const trimmed=line.trim();
+      if(!trimmed){ pushCurrent(); return; }
+      const match = trimmed.match(/^([^:]+):\s*(.+)$/);
+      if(match){ current[match[1].trim()] = match[2].trim(); }
+    });
+    pushCurrent();
+    return kvRows;
+  }
   function takeArrayCandidates(ctx, info, rows){
     const candidates = analyzeTabular(rows);
     for(const cand of candidates){
@@ -1083,9 +1143,9 @@
     };
     ctx.diag.push(`[INFO] ingest start (${files.length} file(s))`);
     const expanded = await flattenIngestFiles(files, ctx);
-    ctx.diag.push(`Ã  ${expanded.length} analyzable file(s)`);
+    ctx.diag.push(`� ${expanded.length} analyzable file(s)`);
     for(const info of expanded){
-      ctx.diag.push(`Ã² ${info.path}`);
+      ctx.diag.push(`� ${info.path}`);
       try{
         if(info.ext==='json' || info.ext==='geojson'){
           const txt = await info.file.text();
@@ -1108,12 +1168,12 @@
     let summaryParts=[];
     if(ctx.geomSummary?.parcel){ summaryParts.push(parcel: ~ sqm ()); }\r\n    if(ctx.geomSummary?.overlays){ summaryParts.push(overlays:  (~ sqm)); }\r\n  }
   async function runUpdater(manifest){
-    log('Î“Ã‡Ã¶ Update start Î“Ã‡Ã¶', new Date().toLocaleString());
+    log('— Update start —', new Date().toLocaleString());
     const out = { ok:[], fail:[] };
     for(const src of manifest.sources||[]){
       try{ if(src.disabled){ log('skip', src.key, '(disabled)'); continue; }
         if(!src.url){ log('skip', src.key, '(no url)'); continue; }
-        log('pull', src.key, 'Î“Ã¥Ã†', src.url);
+        log('pull', src.key, '→', src.url);
         const raw = await fetchJSON(src.url);
         let norm=null; if(src.key==='council') norm = normCouncil(raw); else if(src.key==='agency') norm = normAgency(raw); else if(src.key==='backlog') norm = normBacklog(raw); else if(src.key==='fast') norm = normFast(raw); else { log('warn unknown key', src.key); continue; }
         const checksum = crc32(JSON.stringify(norm)).toString(16); norm.checksum = checksum;
@@ -1121,7 +1181,7 @@
         out.ok.push(src.key); log('ok', src.key, '(crc32='+checksum+')');
       }catch(e){ out.fail.push({key:src.key, err:String(e.message||e)}); log('FAIL', src.key, '-', e.message||e); }
     }
-    refreshAges(); log('Î“Ã‡Ã¶ Update end Î“Ã‡Ã¶'); return out;
+    refreshAges(); log('— Update end —'); return out;
   }
   const DEFAULT_MANIFEST = { sources:[
     {key:'council', url:'', disabled:true},
@@ -1203,9 +1263,9 @@
   function setViewFromPolys(){ const polys=[...(parcelGeom||[]), ...overlayGeoms.flat()]; if(!polys.length){ view=null; ctx.clearRect(0,0,canvas.width,canvas.height); return; } const bb=bboxOfPolys(polys); const pad=0.05; const width=bb.maxx-bb.minx, height=bb.maxy-bb.miny; view={ minx:bb.minx-width*pad, maxx:bb.maxx+width*pad, miny:bb.miny-height*pad, maxy:bb.maxy+height*pad }; }
   function toCanvas(x,y){ if(!view){ return [0,0]; } const w=view.maxx-view.minx, h=view.maxy-view.miny; const cx = (x-view.minx)/w * canvas.width; const cy = canvas.height - (y-view.miny)/h * canvas.height; return [cx,cy]; }
   function redraw(){ ctx.clearRect(0,0,canvas.width,canvas.height); if(!view) return; ctx.save(); ctx.strokeStyle='#1a2432'; ctx.lineWidth=1; for(let i=0;i<canvas.width;i+=64){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); } for(let j=0;j<canvas.height;j+=64){ ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); } ctx.restore(); if(overlayGeoms.length) drawPolys(overlayGeoms.flat(), '#ff5a5a', true); if(parcelGeom) drawPolys(parcelGeom, '#2ecc71', false); }
-  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); $('#overlayStatus').textContent = 'Parcel loaded: '+f.name+' Î“Ã‡Ã³ area '+Math.round(area)+' mâ”¬â–“'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
+  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); $('#overlayStatus').textContent = 'Parcel loaded: '+f.name+' • area '+Math.round(area)+' m²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
   $('#overlayFiles').addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); let total=0; overlayGeoms=[]; try{ for(const f of files){ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) continue; overlayGeoms.push(polys); total += polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); } store.put(LSK.overlays, overlayGeoms); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent = Math.round(total).toLocaleString('en-AU'); $('#overlayStatus').textContent = 'Loaded '+files.length+' overlay file(s)'; notify('ok','Overlay set updated.'); stampInsightUpdate(); }catch(err){ notify('danger','Overlay load failed: '+err.message); } });
-  $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent='Î“Ã‡Ã¶'; $('#overlayStatus').textContent='Overlays cleared.'; });
+  $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent='—'; $('#overlayStatus').textContent='Overlays cleared.'; });
   const workerCode = `
     self.onmessage = (ev)=>{
       const {parcel, overlays, resMeters} = ev.data;
@@ -1244,18 +1304,18 @@
   const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'})));
   worker.onmessage = (ev)=>{
     if(ev.data.type==='progress'){
-      $('#overlayStatus').textContent = `ComputingÎ“Ã‡Âª ${Math.round(100*ev.data.j/ev.data.height)}%`;
+      $('#overlayStatus').textContent = `Computing… ${Math.round(100*ev.data.j/ev.data.height)}%`;
     }else if(ev.data.type==='done'){
       const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
       $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent  = Math.round(overlayArea).toLocaleString('en-AU');
       $('#buildableAreaVal').textContent= Math.round(buildableArea).toLocaleString('en-AU');
       $('#buildableArea').value = Math.round(buildableArea);
-      const status = `OK Î“Ã‡Ã¶ cell ${cellMeters} m; parcel=${Math.round(parcelArea)} mâ”¬â–“; overlay=${Math.round(overlayArea)} mâ”¬â–“; buildable=${Math.round(buildableArea)} mâ”¬â–“`;
+      const status = `OK — cell ${cellMeters} m; parcel=${Math.round(parcelArea)} m²; overlay=${Math.round(overlayArea)} m²; buildable=${Math.round(buildableArea)} m²`;
       $('#overlayStatus').textContent = status;
       store.put(LSK.buildable, {ts: nowISO(), cellMeters, parcelArea, overlayArea, buildableArea});
-      $('#insightBuildable').textContent = `${Math.round(buildableArea).toLocaleString('en-AU')} mâ”¬â–“ buildable`;
-      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} mâ”¬â–“ Î“Ã‡Ã³ cell ${cellMeters} m`;
+      $('#insightBuildable').textContent = `${Math.round(buildableArea).toLocaleString('en-AU')} m² buildable`;
+      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} m² • cell ${cellMeters} m`;
       stampInsightUpdate();
     }
   };
@@ -1265,7 +1325,7 @@
     const parcel = parcelGeom[0];
     const overlaysFlat = overlayGeoms.flat();
     if(!parcel){ notify('danger','Parcel polygon missing.'); return; }
-    $('#overlayStatus').textContent = 'ComputingÎ“Ã‡Âª';
+    $('#overlayStatus').textContent = 'Computing…';
     worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
   });
   function loadDemoScenario(){
@@ -1292,7 +1352,7 @@
       const overlayArea = overlayGeoms.flat().reduce((sum,p)=> sum+areaOfPolyMeters(p),0);
       $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#buildableAreaVal').textContent = 'Î“Ã‡Ã¶';
+      $('#buildableAreaVal').textContent = '—';
       store.del(LSK.buildable);
       $('#insightBuildable').textContent = 'Run buildable engine for net developable area.';
       $('#insightBuildableMeta').textContent = 'Select a resolution and press Compute Buildable.';
@@ -1365,10 +1425,10 @@
     $('#kProfit').textContent = fmtAUD(r.profit);
     const L=[
       `Assumed approval timeline: ${r.inputs.months.toFixed(2)} months`,
-      `Revenue = lots(${r.inputs.lots}) â”œÃ¹ price(${fmtAUD(r.inputs.price)}) = ${fmtAUD(r.revenue)}`,
+      `Revenue = lots(${r.inputs.lots}) × price(${fmtAUD(r.inputs.price)}) = ${fmtAUD(r.revenue)}`,
       `Base cost = acquisition(${fmtAUD(r.inputs.acq)}) + infrastructure(${fmtAUD(r.inputs.infra)}) = ${fmtAUD(r.baseCost)}`,
       `Contingency ${Math.round(r.inputs.cont*100)}% = ${fmtAUD(r.contingency)}`,
-      `Holding (${(r.inputs.rate*100).toFixed(2)}% p.a.) â”œÃ¹ ${r.inputs.months.toFixed(2)} mo = ${fmtAUD(r.holding)}`,
+      `Holding (${(r.inputs.rate*100).toFixed(2)}% p.a.) × ${r.inputs.months.toFixed(2)} mo = ${fmtAUD(r.holding)}`,
       `Total cost = ${fmtAUD(r.totalCost)}`,
       `Net profit = ${fmtAUD(r.profit)}`,
       `Break-even lots: ${r.beLots}`
@@ -1390,7 +1450,7 @@
     }catch(e){
       $('#insightFeas').textContent = 'Awaiting complete feasibility inputs.';
       $('#insightFeasMeta').textContent = e.message;
-      $('#kRev').textContent = $('#kCost').textContent = $('#kProfit').textContent = 'Î“Ã‡Ã¶';
+      $('#kRev').textContent = $('#kCost').textContent = $('#kProfit').textContent = '—';
     }
   }
   const scheduleFeas = debounce(runFeasAuto, 520);
@@ -1405,7 +1465,7 @@
   <script src="vendor/shp.min.js"></script>
 
 </head><body>
-      <h1>BLACKTOP Î“Ã‡Ã¶ Development Brief</h1>
+      <h1>BLACKTOP — Development Brief</h1>
       <div class='muted'>Generated ${now}</div>
       <h2>Summary</h2>
       <div class='k'>
@@ -1418,7 +1478,7 @@
       <h2>Feasibility Details</h2>
       <table>
         <tr><th>Lots</th><td>${f.inputs.lots}</td><th>Price/lot</th><td>${fmtAUD(f.inputs.price)}</td></tr>
-        <tr><th>Parcel Area</th><td>${f.inputs.area} mâ”¬â–“</td><th>Buildable Area</th><td>${f.inputs.buildable} mâ”¬â–“</td></tr>
+        <tr><th>Parcel Area</th><td>${f.inputs.area} m²</td><th>Buildable Area</th><td>${f.inputs.buildable} m²</td></tr>
         <tr><th>Acquisition</th><td>${fmtAUD(f.inputs.acq)}</td><th>Infra/Const</th><td>${fmtAUD(f.inputs.infra)}</td></tr>
         <tr><th>Contingency</th><td>${(f.inputs.cont*100).toFixed(1)}%</td><th>Interest p.a.</th><td>${(f.inputs.rate*100).toFixed(2)}%</td></tr>
         <tr><th>Holding (months)</th><td>${f.inputs.months.toFixed(2)}</td><th>Break-even Lots</th><td>${f.beLots}</td></tr>
@@ -1441,361 +1501,7 @@
   $('#quickReport').addEventListener('click', ()=>{ if(exportPrintable()) stampInsightUpdate(); });
   $('#loadDemo').addEventListener('click', loadDemoScenario);
   /************ HOUSEKEEPING ************/
-  $('#clearLocal').addEventListener('click', async ()=>{ if(confirm('Clear cached datasets, geojsons, and last results?')){ await idbClear(); Object.values(LSK).forEach(store.del); notify('ok','Local cache cleared. ReloadingÎ“Ã‡Âª'); location.reload(); } });
-</script>
-</body>
-</html>
-<script>
-(() => {
-  const originalGuessMime = window.guessMime;
-
-  const GEOM_KEYWORDS = {
-    parcel: ['parcel','site','subject','boundary','lot','property','footprint','site area'],
-    overlay: ['overlay','constraint','hazard','buffer','flood','heritage','easement','restriction','no build','setback','encumbrance']
-  };
-
-  function geometrySourceLabel(info){
-    if(!info) return 'geometry';
-    if(info.path) return info.path;
-    if(info.name) return info.name;
-    if(info.file && info.file.name) return info.file.name;
-    return 'geometry';
-  }
-
-  function sumPolyArea(polys){
-    let total=0;
-    for(const poly of polys||[]){ total += areaOfPolyMeters(poly); }
-    return total;
-  }
-
-  function classifyGeometryCandidate(label, polys){
-    const area = sumPolyArea(polys);
-    const lower = String(label||'').toLowerCase();
-    const parcelHit = GEOM_KEYWORDS.parcel.some(k=> lower.includes(k));
-    const overlayHit = GEOM_KEYWORDS.overlay.some(k=> lower.includes(k));
-    let type;
-    if(parcelHit && !overlayHit) type='parcel';
-    else if(overlayHit && !parcelHit) type='overlay';
-    else if(polys.length===1) type='parcel';
-    else type='overlay';
-    let score = Math.max(0, Math.log10(Math.max(area,1)) * 18);
-    score += type==='parcel'? 60 : 40;
-    if(parcelHit) score += 12;
-    if(overlayHit) score += 12;
-    if(polys.length>1 && type==='overlay') score += 6;
-    return { type, area, score, detail:`${type} candidate (~${Math.round(area)} sqm)` };
-  }
-
-  function shapefileGroupKey(info){
-    const origin = info?.origin || 'shapefile';
-    const base = String(info?.path || info?.name || info?.file?.name || origin).replace(/.*[\\/]/,'').replace(/\.[^.]+$/,'');
-    return `${origin}::${base}`;
-  }
-
-  async function loadShapefileGeoJSON(files){
-    if(!window.JSZip || !window.shp) throw new Error('Shapefile support unavailable');
-    const zip = new JSZip();
-    for(const info of files){
-      const name = String(info.path || info.name || info.file?.name || 'part').replace(/.*[\\/]/,'');
-      const buffer = await info.file.arrayBuffer();
-      zip.file(name, buffer);
-    }
-    const archive = await zip.generateAsync({type:'arraybuffer'});
-    return await shp(archive);
-  }
-
-  async function parseKmlFile(info){
-    if(!window.toGeoJSON) throw new Error('toGeoJSON library not loaded');
-    const text = await info.file.text();
-    const dom = new DOMParser().parseFromString(text,'application/xml');
-    return window.toGeoJSON.kml(dom);
-  }
-
-  async function parseKmzFile(info){
-    if(!window.JSZip) throw new Error('JSZip required for KMZ');
-    if(!window.toGeoJSON) throw new Error('toGeoJSON library not loaded');
-    const buf = await info.file.arrayBuffer();
-    const zip = await JSZip.loadAsync(buf);
-    const entryName = Object.keys(zip.files||{}).find(name=> name.toLowerCase().endsWith('.kml'));
-    if(!entryName) throw new Error('KMZ missing KML payload');
-    const text = await zip.files[entryName].async('text');
-    const dom = new DOMParser().parseFromString(text,'application/xml');
-    return window.toGeoJSON.kml(dom);
-  }
-
-  async function parseHtmlTables(file){
-    const text = await file.text();
-    const dom = new DOMParser().parseFromString(text,'text/html');
-    const tables = Array.from(dom.querySelectorAll('table'));
-    const out=[];
-    tables.forEach((table, index)=>{
-      const name = table.getAttribute('id') || table.getAttribute('data-name') || `table_${index+1}`;
-      const headerCells = Array.from(table.querySelectorAll('thead tr th'));
-      let headers = headerCells.map(cell=> cell.textContent.trim()).filter(Boolean);
-      const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
-      const allRows = bodyRows.length ? bodyRows : Array.from(table.querySelectorAll('tr'));
-      let startIndex = 0;
-      if(!headers.length && allRows.length){
-        headers = Array.from(allRows[0].children).map((cell,i)=> cell.textContent.trim() || `col_${i+1}`);
-        if(!bodyRows.length && !headerCells.length) startIndex = 1;
-      }
-      const rows=[];
-      allRows.forEach((tr, rowIndex)=>{
-        if(rowIndex < startIndex) return;
-        const cells = Array.from(tr.children);
-        if(!headers.length){ headers = cells.map((_,i)=> `col_${i+1}`); }
-        const row={};
-        headers.forEach((header,i)=>{ row[header || `col_${i+1}`] = (cells[i]?.textContent || '').trim(); });
-        if(Object.values(row).some(v=> v)) rows.push(row);
-      });
-      if(headers.length && rows.length){ out.push({ name, rows }); }
-    });
-    return out;
-  }
-
-  function parseLooseText(text){
-    const cleaned = String(text||'').trim();
-    if(!cleaned) return [];
-    const firstPass = Papa.parse(cleaned, { header:true, skipEmptyLines:'greedy', delimiter:'' });
-    let rows = Array.isArray(firstPass.data)? firstPass.data.filter(r=> r && Object.values(r).some(v=> String(v??'').trim()!=='')) : [];
-    if(rows.length){
-      const sampleKeys = Object.keys(rows[0]).filter(k=> k && k!=='__parsed_extra');
-      if(sampleKeys.length>1){
-        return rows.map(row=>{
-          const out={};
-          for(const [key,val] of Object.entries(row)){
-            if(key==='__parsed_extra') continue;
-            out[key] = val;
-          }
-          return out;
-        });
-      }
-    }
-    const kvRows=[];
-    let current={};
-    const pushCurrent=()=>{ if(Object.keys(current).length){ kvRows.push(current); current={}; } };
-    cleaned.split(/\r?\n/).forEach(line=>{
-      const trimmed=line.trim();
-      if(!trimmed){ pushCurrent(); return; }
-      const match = trimmed.match(/^([^:]+):\s*(.+)$/);
-      if(match){ current[match[1].trim()] = match[2].trim(); }
-    });
-    pushCurrent();
-    return kvRows;
-  }
-
-  window.guessMime = function(name){
-    const ext = String(name||'').toLowerCase().split('.').pop();
-    if(ext==='html' || ext==='htm') return 'text/html';
-    return originalGuessMime(name);
-  };
-
-  window.parseExcelFile = async function(file){
-    const buf = new Uint8Array(await file.arrayBuffer());
-    const wb = XLSX.read(buf, {type:'array'});
-    const sheets=[];
-    for(const sheetName of wb.SheetNames||[]){
-      const sheet = wb.Sheets[sheetName];
-      if(!sheet) continue;
-      const rows = XLSX.utils.sheet_to_json(sheet, { defval:'', raw:false });
-      if(rows && rows.length) sheets.push({ name:sheetName, rows });
-    }
-    return sheets;
-  };
-
-  window.ingestGeometry = async function(ctx){
-    if(!ctx.pendingGeom || !ctx.pendingGeom.length) return;
-    const parcelCandidate = { score:-Infinity, polys:null, source:null, area:0 };
-    const overlayCandidates = [];
-    const leftover = [];
-    const shapefileGroups = new Map();
-    const handleGeo = (label, geojson)=>{
-      try{
-        const polys = flattenFeatures(geojson);
-        if(!polys || !polys.length){
-          ctx.diag.push(`[WARN] ${label} has no polygon features`);
-          return;
-        }
-        const cls = classifyGeometryCandidate(label, polys);
-        if(cls.type==='parcel'){
-          if(cls.score > parcelCandidate.score){
-            parcelCandidate.score = cls.score;
-            parcelCandidate.polys = polys;
-            parcelCandidate.source = label;
-            parcelCandidate.area = cls.area;
-          }else{
-            ctx.diag.push(`[SKIP] parcel candidate ${label} skipped (score ${cls.score.toFixed(1)} <= ${parcelCandidate.score.toFixed(1)})`);
-          }
-        }else{
-          overlayCandidates.push({ source:label, polys, area:cls.area, score:cls.score, detail:cls.detail });
-        }
-      }catch(err){
-        ctx.diag.push(`[WARN] geometry flatten failed for ${label}: ${err.message}`);
-      }
-    };
-    for(const entry of ctx.pendingGeom){
-      const {kind, info, payload} = entry;
-      const label = geometrySourceLabel(info);
-      try{
-        if(kind==='geojson' && payload){
-          handleGeo(label, payload);
-        }else if(kind==='shapefile'){
-          const key = shapefileGroupKey(info);
-          const group = shapefileGroups.get(key) || [];
-          group.push(info);
-          shapefileGroups.set(key, group);
-        }else if(kind==='kml'){
-          const gj = await parseKmlFile(info);
-          handleGeo(label, gj);
-        }else if(kind==='kmz'){
-          const gj = await parseKmzFile(info);
-          handleGeo(label, gj);
-        }else{
-          leftover.push(entry);
-        }
-      }catch(err){
-        ctx.diag.push(`[WARN] geometry ingest error for ${label}: ${err.message}`);
-      }
-    }
-    for(const [key, files] of shapefileGroups.entries()){
-      try{
-        const gj = await loadShapefileGeoJSON(files);
-        if(gj) handleGeo(files[0]?.path || files[0]?.name || key, gj);
-      }catch(err){
-        ctx.diag.push(`[WARN] shapefile ${key} failed: ${err.message}`);
-      }
-    }
-    ctx.pendingGeom = leftover;
-    const geomSummary = {};
-    let viewNeedsUpdate=false;
-    if(parcelCandidate.polys){
-      parcelGeom = parcelCandidate.polys;
-      store.put(LSK.parcel, parcelGeom);
-      const parcelArea = parcelCandidate.area;
-      $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
-      $('#parcelArea').value = Math.round(parcelArea);
-      ctx.updated.add('parcel geometry');
-      ctx.diag.push(`[OK] parcel geometry ingested from ${parcelCandidate.source} (~${Math.round(parcelArea)} sqm)`);
-      geomSummary.parcel = { area: parcelArea, source: parcelCandidate.source };
-      viewNeedsUpdate = true;
-    }
-    if(overlayCandidates.length){
-      overlayCandidates.sort((a,b)=> b.score - a.score);
-      overlayGeoms = overlayCandidates.map(o=> o.polys);
-      store.put(LSK.overlays, overlayGeoms);
-      const overlayArea = overlayCandidates.reduce((tot,o)=> tot + o.area, 0);
-      $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#overlayStatus').textContent = `Loaded ${overlayCandidates.length} ingest overlay file(s)`;
-      ctx.updated.add('overlay geometry');
-      ctx.diag.push(`[OK] ${overlayCandidates.length} overlay set(s) ingested (~${Math.round(overlayArea)} sqm)`);
-      geomSummary.overlays = { count: overlayCandidates.length, area: overlayArea };
-      viewNeedsUpdate = true;
-    }
-    if(viewNeedsUpdate){
-      setViewFromPolys();
-      redraw();
-      runFeasAuto();
-    }
-    if(Object.keys(geomSummary).length){
-      ctx.geomSummary = geomSummary;
-    }
-  };
-
-  window.ingestSmart = async function(files, opts={}){
-    if(!files || !files.length){ notify('warn','No files selected for ingest.'); return; }
-    if(!window.JSZip || !window.Papa || !window.XLSX){ notify('danger','Parsing libraries missing. Reload recommended.'); return; }
-    const ctx = {
-      diag:[],
-      errors:[],
-      successes:[],
-      pendingGeom:[],
-      best:{
-        council:{score:-Infinity,detail:'',rows:0,source:null},
-        agency:{score:-Infinity,detail:'',rows:0,source:null},
-        backlog:{score:-Infinity,detail:'',rows:0,source:null},
-        fast:{score:-Infinity,detail:'',rows:0,source:null}
-      },
-      updated:new Set(),
-      geomSummary:null
-    };
-    ctx.diag.push(`[INFO] ingest start (${files.length} file(s))`);
-    const expanded = await flattenIngestFiles(files, ctx);
-    ctx.diag.push(`[INFO] ${expanded.length} analyzable file(s)`);
-    for(const info of expanded){
-      ctx.diag.push(`[INFO] ${info.path}`);
-      try{
-        if(info.ext==='json' || info.ext==='geojson'){
-          const txt = await info.file.text();
-          const parsed = tryParse(txt);
-          if(!parsed){ ctx.diag.push('[WARN] invalid JSON'); continue; }
-          if(handleJsonStructure(ctx, info, parsed)) continue;
-          if(Array.isArray(parsed)){ takeArrayCandidates(ctx, info, parsed); continue; }
-        } else if(info.ext==='csv' || info.ext==='tsv'){
-          const parsed = await parseDelimitedFile(info.file, info.ext==='tsv'? '\t':undefined);
-          takeArrayCandidates(ctx, info, parsed.rows);
-          continue;
-        } else if(info.ext==='xlsx' || info.ext==='xls'){
-          const sheets = await parseExcelFile(info.file);
-          if(!sheets.length){ ctx.diag.push('[WARN] empty workbook'); continue; }
-          for(const sheet of sheets){
-            ctx.diag.push(`  [INFO] sheet ${sheet.name}`);
-            takeArrayCandidates(ctx, {path:`${info.path}:${sheet.name}`}, sheet.rows);
-          }
-          continue;
-        } else if(info.ext==='html' || info.ext==='htm'){
-          const tables = await parseHtmlTables(info.file);
-          if(!tables.length){ ctx.diag.push('[WARN] HTML file contained no tables'); continue; }
-          for(const table of tables){
-            ctx.diag.push(`  [INFO] html table ${table.name} (${table.rows.length} rows)`);
-            takeArrayCandidates(ctx, {path:`${info.path}:${table.name}`}, table.rows);
-          }
-          continue;
-        } else if(info.ext==='kml' || info.ext==='kmz'){
-          ctx.pendingGeom.push({ kind: info.ext, info });
-          ctx.diag.push('[GEOM] KML/KMZ queued for geo ingest');
-          continue;
-        } else if(['shp','dbf','shx','prj','cpg'].includes(info.ext)){
-          ctx.pendingGeom.push({ kind:'shapefile', info });
-          continue;
-        } else if(info.ext==='txt'){
-          const rawText = await info.file.text();
-          const parsed = tryParse(rawText);
-          if(parsed && typeof parsed==='object'){
-            if(handleJsonStructure(ctx, info, parsed)) continue;
-            if(Array.isArray(parsed)){ takeArrayCandidates(ctx, info, parsed); continue; }
-          }
-          const loose = parseLooseText(rawText);
-          if(loose.length){ takeArrayCandidates(ctx, info, loose); continue; }
-        }
-      }catch(err){
-        ctx.diag.push(`[WARN] ingest error: ${err.message}`);
-        ctx.errors.push(`${info.path}: ${err.message}`);
-      }
-    }
-    await ingestGeometry(ctx);
-    const summaryParts=[];
-    for(const kind of ['council','agency','backlog','fast']){
-      const best = ctx.best[kind];
-      if(best.score>-Infinity){ summaryParts.push(`${kind}: ${best.rows} rows (${best.source})`); }
-    }
-    if(ctx.geomSummary?.parcel){ summaryParts.push(`parcel: ~${Math.round(ctx.geomSummary.parcel.area)} sqm (${ctx.geomSummary.parcel.source})`); }
-    if(ctx.geomSummary?.overlays){ summaryParts.push(`overlays: ${ctx.geomSummary.overlays.count} (~${Math.round(ctx.geomSummary.overlays.area)} sqm)`); }
-    if(ctx.pendingGeom.length){ summaryParts.push(`geo pending: ${ctx.pendingGeom.length}`); }
-    document.getElementById('ingestSummary').textContent = summaryParts.length ? summaryParts.join(' | ') : 'No structured datasets detected.';
-    document.getElementById('ingestDiagnostics').textContent = ctx.diag.join('\n');
-    if(ctx.updated.size){
-      refreshAges();
-      updateInsightsFromStore();
-      stampInsightUpdate();
-      notify('ok','Bulk ingest updated ' + Array.from(ctx.updated).join(', '));
-    } else if(ctx.pendingGeom.length){
-      notify('warn','Tabular ingest complete. Geometry queued for processing.');
-    } else {
-      notify('warn','No ingestable datasets detected.');
-    }
-    return ctx;
-  };
-})();
+  $('#clearLocal').addEventListener('click', async ()=>{ if(confirm('Clear cached datasets, geojsons, and last results?')){ await idbClear(); Object.values(LSK).forEach(store.del); notify('ok','Local cache cleared. Reloading…'); location.reload(); } });
 </script>
 </body>
 </html>
