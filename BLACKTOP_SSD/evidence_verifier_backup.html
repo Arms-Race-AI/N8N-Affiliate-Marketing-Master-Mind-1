@@ -58,7 +58,6 @@ document.getElementById('verify').addEventListener('click', async ()=>{
     out.textContent = JSON.stringify({claimed:res.claimed, actual:res.actual, pack:{ exportedAt:pack.exportedAt, method:pack.method, compute:pack.compute, inputs:pack.inputs }}, null, 2);
   }catch(e){ status.innerHTML = '<b class="err">ERROR</b> '+e.message; }
 });
-  const url=new URL(location.href); const q=url.searchParams; const preload=q.get("hash"); if(preload){ document.getElementById("status").innerHTML = "<b class=\"warn\">CHECKSUM</b> provided"; document.getElementById("out").textContent = JSON.stringify({provided:preload}, null, 2); }
 </script>
 </body>
 </html>
