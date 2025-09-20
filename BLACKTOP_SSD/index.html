@@ -150,24 +150,7 @@
       .ingest-report{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
     .ingest-report .pill{background:rgba(8,14,26,.92);border:1px solid rgba(92,118,188,.45);min-height:120px}
     .ingest-report .pill .v{font-size:16px;color:var(--accent)}
-    .ingest-report .mono{background:rgba(4,8,18,.75);border-radius:14px;border:1px solid rgba(74,104,172,.45);padding:12px;margin:6px 0 0;max-height:180px;overflow:auto}
-    /* Start + Help + Long-press */
-    .start{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.7);z-index:100}
-    .start.active{display:flex}
-    .start-card{width:min(720px,94vw);padding:22px;border-radius:22px;background:linear-gradient(160deg,var(--panel-strong),rgba(10,16,32,.94));border:1px solid var(--border-strong);box-shadow:var(--shadow);text-align:center}
-    .start-title{margin:0 0 8px;font-size:24px}
-    .start-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px}
-    .start-foot{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:12px;margin-top:10px}
-    .help{position:fixed;inset:0;display:none;background:rgba(0,0,0,.65);z-index:98;align-items:center;justify-content:center}
-    .help.active{display:flex}
-    .help-panel{width:min(840px,94vw);max-height:80vh;overflow:auto;background:var(--panel-strong);border:1px solid var(--border-strong);border-radius:20px;padding:18px}
-    .help-list{display:grid;gap:8px;margin-top:10px}
-    .help-topic{padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
-    .help-pop{position:fixed;max-width:320px;background:var(--panel-strong);border:1px solid var(--border-strong);border-radius:12px;padding:10px;z-index:110;color:var(--text);box-shadow:var(--shadow);display:none}
-    .help-pop .h{font-weight:700;margin:0 0 4px}
-    .help-pop .x{position:absolute;right:8px;top:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px}
-    .help-fab{position:fixed;left:22px;bottom:22px;z-index:70;border-radius:999px;padding:10px 14px;background:rgba(17,25,44,.9);border:1px solid rgba(95,119,190,.45);color:var(--accent);cursor:pointer}
-  </style>
+    .ingest-report .mono{background:rgba(4,8,18,.75);border-radius:14px;border:1px solid rgba(74,104,172,.45);padding:12px;margin:6px 0 0;max-height:180px;overflow:auto}</style>
   <script src="vendor/jszip.min.js"></script>
   <script src="vendor/papaparse.min.js"></script>
   <script src="vendor/xlsx.full.min.js"></script>
@@ -184,35 +167,6 @@
     <div class="stellar__grid"></div>
   </div>
   <div class="wrap">
-    <!-- Start Overlay -->
-    <div class="start" id="startOverlay" aria-hidden="true">
-      <div class="start-card">
-        <h2 class="start-title">Welcome to BLACKTOP</h2>
-        <div class="helper">Start here. We’ll guide you, or jump straight to help.</div>
-        <div class="start-actions">
-          <button class="btn btn-gold" id="startGuided">Start Guided Setup</button>
-          <button class="btn" id="startTutorial">Watch Tutorial</button>
-          <button class="btn" id="startHelp">Open Help</button>
-        </div>
-        <div class="start-foot"><label><input type="checkbox" id="startDontShow" /> Don’t show this again</label></div>
-      </div>
-    </div>
-    <!-- Help Center -->
-    <div class="help" id="helpOverlay" aria-hidden="true">
-      <div class="help-panel">
-        <h2>Help Center</h2>
-        <input id="helpSearch" placeholder="Search help…" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text)"/>
-        <div class="help-list" id="helpList">
-          <div class="help-topic" data-tags="start guided setup tutorial">Getting Started: Guided Setup and Tutorial</div>
-          <div class="help-topic" data-tags="parcel overlays geojson kml kmz shapefile">Loading Parcel and Overlay Files</div>
-          <div class="help-topic" data-tags="compute grid exact buildable vector">Compute Buildable: Grid vs Exact</div>
-          <div class="help-topic" data-tags="timing council referral backlog fast-track">Approval Timing & Risk</div>
-          <div class="help-topic" data-tags="feasibility economics lots price cost interest">Feasibility & Economics</div>
-          <div class="help-topic" data-tags="report evidence export verify checksum">Reports and Evidence Verification</div>
-        </div>
-        <div class="guide-actions"><button class="btn" id="helpClose">Close</button></div>
-      </div>
-    </div>
     <!-- Guided Setup Overlay -->
     <div class="guide" id="guideOverlay" aria-hidden="true">
       <div class="guide-panel">
@@ -281,8 +235,7 @@
           </div>
         </div>
       </div>
-      <div class="brand-controls">
-        <button class="btn" id="startButton" style="padding:8px 12px" data-help="Open the Start panel with setup, tutorial, and help.">Start</button>
+      <div class="brand-controls"><button class="btn" id="startButton" style="padding:8px 12px">Start</button>
         <a class="quick-link" href="#dataOps">Data Engine</a>
         <a class="quick-link" href="#overlayEngine">Overlay &amp; Buildable</a>
         <a class="quick-link" href="#timingPanel">Timing &amp; Risk</a>
@@ -475,7 +428,7 @@
             <option value="grid" selected>Grid (fast)</option>
             <option value="vector">Exact (vector)</option>
           </select>
-          <button class="btn btn-gold" id="calcBuildable" data-help="Compute net buildable area. Auto mode picks the best method.">Compute Buildable</button>
+          <button class="btn btn-gold" id="calcBuildable">Compute Buildable</button>
           <button class="btn" id="cancelBuildable">Cancel Compute</button>
           <button class="btn" id="clearOverlays">Clear Overlays</button>
         </div>
@@ -483,11 +436,11 @@
         <div class="row">
           <div>
             <label>Load Parcel (GeoJSON Polygon/MultiPolygon)</label>
-            <input type="file" id="parcelFile" accept=".json,.geojson,application/json" data-help="Load your parcel polygon as GeoJSON/KML/KMZ/Shapefile."/>
+            <input type="file" id="parcelFile" accept=".json,.geojson,application/json"/>
           </div>
           <div>
             <label>Load Overlays (multiple GeoJSON)</label>
-            <input type="file" id="overlayFiles" accept=".json,.geojson,application/json" multiple data-help="Load constraints/overlays. You can select multiple files."/>
+            <input type="file" id="overlayFiles" accept=".json,.geojson,application/json" multiple/>
           </div>
         </div>
         <div class="row" style="margin-top:8px">
@@ -510,7 +463,7 @@
             <h2>Approval Timing &amp; Risk</h2>
             <div class="helper">Blend council intelligence, referral lag, and backlog stressors to forecast determination timing.</div>
           </div>
-          <button class="btn btn-gold" id="runTiming" data-help="Forecast approval timing and risk using your datasets.">Run Timing Model</button>
+          <button class="btn btn-gold" id="runTiming">Run Timing Model</button>
         </div>
         <div class="row">
           <div><label>Council (LGA) Name</label><input id="councilName" placeholder="e.g. Liverpool City" list="councilList" /></div>
@@ -542,7 +495,7 @@
             <h2>Feasibility Economics</h2>
             <div class="helper">Stress-test the deal with holding, contingency, and yield metrics linked to timing outputs.</div>
           </div>
-          <button class="btn btn-gold" id="runFeas" data-help="Calculate revenue, costs, and profit with your inputs.">Run Feasibility</button>
+          <button class="btn btn-gold" id="runFeas">Run Feasibility</button>
         </div>
         <div class="row">
           <div><label>Parcel Area (mÂ²)</label><input id="parcelArea" type="number" step="1" min="0" /></div>
@@ -569,7 +522,7 @@
           <pre id="feasDetail" class="mono"></pre>
         </details>
         <div class="hr"></div>
-        <button class="btn btn-prim" id="exportReport" data-help="Open a printable report with timing and feasibility.">Export Printable Report</button>
+        <button class="btn btn-prim" id="exportReport">Export Printable Report</button>
         <div class="foot">If you ran Timing, its months feed holding costs automatically.</div>
       </article>
     </section>
@@ -626,48 +579,52 @@
   }
   function debounce(fn, wait=400){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
   const sessionLog = [];\n  // Start + Help overlays and long-press help
-  const START_KEY = 'bt_seen_start';
-  function openStart(){ const el=#startOverlay; if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
-  function closeStart(){ const el=#startOverlay; if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
-  function openHelp(){ const el=#helpOverlay; if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
-  function closeHelp(){ const el=#helpOverlay; if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
-  const helpPop=document.createElement('div'); helpPop.className='help-pop'; helpPop.innerHTML='<button class="x" aria-label="Close">×</button><div class="h">Help</div><div class="b"></div>'; document.body.appendChild(helpPop); helpPop.querySelector('.x').addEventListener('click', ()=> helpPop.style.display='none');
-  function findHelpTarget(el){ while(el && el!==document.body){ if(el.getAttribute && el.getAttribute('data-help')) return el; el=el.parentNode; } return null; }
-  function showHelpAt(el){ const txt=el.getAttribute('data-help'); if(!txt) return; const r=el.getBoundingClientRect(); const b=helpPop.querySelector('.b'); b.textContent=txt; helpPop.style.left = Math.max(10, Math.min(window.innerWidth-340, r.left+window.scrollX))+'px'; helpPop.style.top = (r.bottom+8+window.scrollY)+'px'; helpPop.style.display='block'; }
-  let lpTimer=null; let lpTarget=null; const LP_MS=600;
-  function lpStart(e){ const t=findHelpTarget(e.target); if(!t) return; lpTarget=t; clearTimeout(lpTimer); lpTimer=setTimeout(()=>{ showHelpAt(lpTarget); }, LP_MS); }
-  function lpEnd(){ clearTimeout(lpTimer); lpTimer=null; }
-  document.addEventListener('mousedown', lpStart, true);
-  document.addEventListener('touchstart', lpStart, {passive:true, capture:true});
-  document.addEventListener('mouseup', lpEnd, true);
-  document.addEventListener('touchend', lpEnd, {passive:true, capture:true});
-  // Bind start/help controls
-  #startButton.addEventListener('click', openStart);
-  #startGuided.addEventListener('click', ()=>{ closeStart(); openGuide(); });
-  #startTutorial.addEventListener('click', ()=>{ closeStart(); startTutorial(); });
-  #startHelp.addEventListener('click', ()=>{ closeStart(); openHelp(); });
-  #helpClose.addEventListener('click', closeHelp);
-  #openHelp?.addEventListener('click', openHelp);
-  const fab=document.createElement('button'); fab.className='help-fab'; fab.textContent='Help'; fab.addEventListener('click', openHelp); document.body.appendChild(fab);
-  try{ if(localStorage.getItem(START_KEY)!=='1'){ openStart(); } }catch{}
-  #startDontShow.addEventListener('change', e=>{ try{ localStorage.setItem(START_KEY, e.target.checked? '1':'0'); }catch{} });
-  // Minimal tutorial (coach) — highlight key controls sequentially
-  function startTutorial(){
-    const steps=[
-      {sel:'#guidedSetup', text:'Guided Setup walks you through loading data and running the engines.'},
-      {sel:'#parcelFile', text:'Load your parcel (GeoJSON/KML/KMZ/Shapefile).'},
-      {sel:'#overlayFiles', text:'Load overlay constraints (optional).'},
-      {sel:'#calcBuildable', text:'Compute net buildable area.'},
-      {sel:'#runTiming', text:'Forecast approval timing & risk.'},
-      {sel:'#runFeas', text:'Calculate feasibility and export your report.'}
-    ];
-    let i=0; const spot=document.createElement('div'); spot.style.position='fixed'; spot.style.pointerEvents='none'; spot.style.border='2px solid var(--accent)'; spot.style.borderRadius='10px'; spot.style.zIndex='105'; const card=document.createElement('div'); card.style.position='fixed'; card.style.zIndex='106'; card.style.maxWidth='420px'; card.style.padding='12px'; card.style.border='1px solid var(--border)'; card.style.borderRadius='12px'; card.style.background='var(--panel-strong)'; card.style.color='var(--text)'; const btns=document.createElement('div'); btns.style.marginTop='8px'; btns.style.display='flex'; btns.style.gap='8px'; const next=document.createElement('button'); next.className='btn'; next.textContent='Next'; const back=document.createElement('button'); back.className='btn'; back.textContent='Back'; const skip=document.createElement('button'); skip.className='btn'; skip.textContent='Skip'; btns.append(back,next,skip); card.appendChild(btns); document.body.append(spot,card);
-    function render(){ const step=steps[i]; const el=document.querySelector(step.sel); if(!el){ nextStep(); return; } el.scrollIntoView({behavior:'smooth', block:'center'}); const r=el.getBoundingClientRect(); spot.style.left=(r.left-6+window.scrollX)+'px'; spot.style.top=(r.top-6+window.scrollY)+'px'; spot.style.width=(r.width+12)+'px'; spot.style.height=(r.height+12)+'px'; card.firstChild?.remove(); const p=document.createElement('div'); p.textContent=step.text; card.insertBefore(p, btns); card.style.left=Math.max(10, Math.min(window.innerWidth-440, r.left+window.scrollX))+'px'; card.style.top=(r.bottom+12+window.scrollY)+'px'; }
-    function cleanup(){ spot.remove(); card.remove(); }
-    function nextStep(){ i++; if(i>=steps.length){ cleanup(); return; } render(); }
-    function prevStep(){ if(i>0){ i--; render(); } }
-    next.addEventListener('click', nextStep); back.addEventListener('click', prevStep); skip.addEventListener('click', cleanup); render();
-  }
+  (function(){
+    const START_KEY = 'bt_seen_start';
+    function byId(id){ return document.getElementById(id); }
+    function openStart(){ const el=byId('startOverlay'); if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
+    function closeStart(){ const el=byId('startOverlay'); if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
+    function openHelp(){ const el=byId('helpOverlay'); if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
+    function closeHelp(){ const el=byId('helpOverlay'); if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
+    const helpPop=document.createElement('div'); helpPop.className='help-pop'; helpPop.innerHTML='<button class="x" aria-label="Close">×</button><div class="h">Help</div><div class="b"></div>'; document.body.appendChild(helpPop); helpPop.querySelector('.x').addEventListener('click', ()=> helpPop.style.display='none');
+    function findHelpTarget(el){ while(el && el!==document.body){ if(el.getAttribute && el.getAttribute('data-help')) return el; el=el.parentNode; } return null; }
+    function showHelpAt(el){ const txt=el.getAttribute('data-help'); if(!txt) return; const r=el.getBoundingClientRect(); const b=helpPop.querySelector('.b'); b.textContent=txt; helpPop.style.left = Math.max(10, Math.min(window.innerWidth-340, r.left+window.scrollX))+'px'; helpPop.style.top = (r.bottom+8+window.scrollY)+'px'; helpPop.style.display='block'; }
+    let lpTimer=null; let lpTarget=null; const LP_MS=600;
+    function lpStart(e){ const t=findHelpTarget(e.target); if(!t) return; lpTarget=t; clearTimeout(lpTimer); lpTimer=setTimeout(()=>{ showHelpAt(lpTarget); }, LP_MS); }
+    function lpEnd(){ clearTimeout(lpTimer); lpTimer=null; }
+    document.addEventListener('mousedown', lpStart, true);
+    document.addEventListener('touchstart', lpStart, {passive:true, capture:true});
+    document.addEventListener('mouseup', lpEnd, true);
+    document.addEventListener('touchend', lpEnd, {passive:true, capture:true});
+    // Bind start/help controls
+    byId('startButton')?.addEventListener('click', openStart);
+    byId('startGuided')?.addEventListener('click', ()=>{ closeStart(); if(typeof openGuide==='function') openGuide(); });
+    byId('startTutorial')?.addEventListener('click', ()=>{ closeStart(); if(typeof startTutorial==='function') startTutorial(); });
+    byId('startHelp')?.addEventListener('click', ()=>{ closeStart(); openHelp(); });
+    byId('helpClose')?.addEventListener('click', closeHelp);
+    // Floating help button
+    const fab=document.createElement('button'); fab.className='help-fab'; fab.textContent='Help'; fab.addEventListener('click', openHelp); document.body.appendChild(fab);
+    try{ if(localStorage.getItem(START_KEY)!=='1'){ openStart(); } }catch{}
+    byId('startDontShow')?.addEventListener('change', e=>{ try{ localStorage.setItem(START_KEY, e.target.checked? '1':'0'); }catch{} });
+    // Simple tutorial
+    window.startTutorial = window.startTutorial || function(){
+      const steps=[
+        {sel:'#guidedSetup', text:'Guided Setup walks you through loading data and running the engines.'},
+        {sel:'#parcelFile', text:'Load your parcel (GeoJSON/KML/KMZ/Shapefile).'},
+        {sel:'#overlayFiles', text:'Load overlay constraints (optional).'},
+        {sel:'#calcBuildable', text:'Compute net buildable area.'},
+        {sel:'#runTiming', text:'Forecast approval timing & risk.'},
+        {sel:'#runFeas', text:'Calculate feasibility and export your report.'}
+      ];
+      let i=0; const spot=document.createElement('div'); spot.style.position='fixed'; spot.style.pointerEvents='none'; spot.style.border='2px solid var(--accent)'; spot.style.borderRadius='10px'; spot.style.zIndex='105'; const card=document.createElement('div'); card.style.position='fixed'; card.style.zIndex='106'; card.style.maxWidth='420px'; card.style.padding='12px'; card.style.border='1px solid var(--border)'; card.style.borderRadius='12px'; card.style.background='var(--panel-strong)'; card.style.color='var(--text)'; const btns=document.createElement('div'); btns.style.marginTop='8px'; btns.style.display='flex'; btns.style.gap='8px'; const next=document.createElement('button'); next.className='btn'; next.textContent='Next'; const back=document.createElement('button'); back.className='btn'; back.textContent='Back'; const skip=document.createElement('button'); skip.className='btn'; skip.textContent='Skip'; const txt=document.createElement('div'); card.append(txt,btns); document.body.append(spot,card);
+      function render(){ const step=steps[i]; const el=document.querySelector(step.sel); if(!el){ nextStep(); return; } el.scrollIntoView({behavior:'smooth', block:'center'}); const r=el.getBoundingClientRect(); spot.style.left=(r.left-6+window.scrollX)+'px'; spot.style.top=(r.top-6+window.scrollY)+'px'; spot.style.width=(r.width+12)+'px'; spot.style.height=(r.height+12)+'px'; txt.textContent=step.text; card.style.left=Math.max(10, Math.min(window.innerWidth-440, r.left+window.scrollX))+'px'; card.style.top=(r.bottom+12+window.scrollY)+'px'; }
+      function cleanup(){ spot.remove(); card.remove(); }
+      function nextStep(){ i++; if(i>=steps.length){ cleanup(); return; } render(); }
+      function prevStep(){ if(i>0){ i--; render(); } }
+      next.addEventListener('click', nextStep); back.addEventListener('click', prevStep); skip.addEventListener('click', cleanup); render();
+    };
+    byId('helpSearch')?.addEventListener('input', e=>{ const q=(e.target.value||'').toLowerCase(); document.querySelectorAll('#helpList .help-topic').forEach(n=>{ const t=(n.textContent||'').toLowerCase(); const tags=(n.getAttribute('data-tags')||'').toLowerCase(); n.style.display = (t.includes(q)||tags.includes(q))? '' : 'none'; }); });
+  })();
   // Simple mode state
   const SIMPLE_KEY = 'bt_simple_mode';
   function applySimpleMode(on){ document.body.classList.toggle('simple', !!on); try{ localStorage.setItem(SIMPLE_KEY, on? '1':'0'); }catch{} }
@@ -1926,5 +1883,33 @@
 
 
 
+<!-- Start and Help Overlays -->
+<div class="start" id="startOverlay" aria-hidden="true">
+  <div class="start-card">
+    <h2 class="start-title">Welcome to BLACKTOP</h2>
+    <div class="helper">Start here. We'll guide you, or jump straight to help.</div>
+    <div class="start-actions">
+      <button class="btn btn-gold" id="startGuided">Start Guided Setup</button>
+      <button class="btn" id="startTutorial">Watch Tutorial</button>
+      <button class="btn" id="startHelp">Open Help</button>
+    </div>
+    <div class="start-foot"><label><input type="checkbox" id="startDontShow" /> Don't show this again</label></div>
+  </div>
+</div>
+<div class="help" id="helpOverlay" aria-hidden="true">
+  <div class="help-panel">
+    <h2>Help Center</h2>
+    <input id="helpSearch" placeholder="Search help…" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text)"/>
+    <div class="help-list" id="helpList">
+      <div class="help-topic" data-tags="start guided setup tutorial">Getting Started: Guided Setup and Tutorial</div>
+      <div class="help-topic" data-tags="parcel overlays geojson kml kmz shapefile">Loading Parcel and Overlay Files</div>
+      <div class="help-topic" data-tags="compute grid exact buildable vector">Compute Buildable: Grid vs Exact</div>
+      <div class="help-topic" data-tags="timing council referral backlog fast-track">Approval Timing & Risk</div>
+      <div class="help-topic" data-tags="feasibility economics lots price cost interest">Feasibility & Economics</div>
+      <div class="help-topic" data-tags="report evidence export verify checksum">Reports and Evidence Verification</div>
+    </div>
+    <div class="guide-actions"><button class="btn" id="helpClose">Close</button></div>
+  </div>
+</div>
 
 
