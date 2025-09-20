@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>BLACKTOP — TJ Command Deck (v0.9 • External SSD • Offline)</title>
+  <title>BLACKTOP - TJ Command Deck (v0.9 - External SSD - Offline)</title>
   <style>
     :root{--bg:#02050c;--bg-alt:#0b1324;--panel:rgba(13,21,40,.92);--panel-strong:rgba(18,28,52,.96);--panel-soft:rgba(18,26,45,.86);--border:rgba(92,118,178,.55);--border-strong:rgba(132,166,255,.75);--accent:#f9d66d;--accent-soft:#ffe7a3;--accent-halo:rgba(249,214,109,.28);--electric:#5fd0ff;--electric-soft:rgba(95,208,255,.24);--emerald:#38f3b6;--emerald-soft:rgba(56,243,182,.2);--crimson:#ff6b86;--text:#f7f9ff;--muted:#9aa9ce;--muted-soft:#6e7aa3;--muted-dim:#3f4a6d;--shadow:0 40px 90px rgba(3,8,25,.75);--radius:22px}
     *,*::before,*::after{box-sizing:border-box}
@@ -29,7 +29,7 @@
     .brand-meta .sub{padding:6px 12px;border-radius:999px;background:rgba(28,42,75,.6);border:1px solid rgba(92,118,178,.55);backdrop-filter:blur(6px);color:var(--muted)}
     .brand-controls{display:flex;flex-wrap:wrap;gap:12px}
     .quick-link{position:relative;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:rgba(17,25,44,.9);border:1px solid rgba(95,119,190,.4);color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-    .quick-link::after{content:"→";font-size:12px;transition:transform .25s ease}
+    .quick-link::after{content:\">\";font-size:12px;transition:transform .25s ease}
     .quick-link:hover::after{transform:translateX(4px)}
     /* Simple mode for larger fonts and fewer controls */
     body.simple{font-size:18px}
@@ -225,10 +225,10 @@
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 17h5l4-10 4 10h5" stroke="#f9d66d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.8" fill="#f9d66d"/></svg>
         </span>
         <div>
-          <h1>BLACKTOP — TJ Command Deck</h1>
+          <h1>BLACKTOP â€” TJ Command Deck</h1>
           <div class="brand-meta">
-            <span class="sub">External SSD • Offline-first intelligence</span>
-            <span class="sub">Version 0.9 · Production-tuned</span>
+            <span class="sub">External SSD - Offline-first intelligence</span>
+            <span class="sub">Version 0.9 Â· Production-tuned</span>
             <span class="sub">Evergreen release with quantum hardening</span>
           </div>
         </div>
@@ -244,7 +244,7 @@
     <div class="topbar command-ribbon">
       <div class="topcard">
         <h3>Operating Mode</h3>
-        <p id="operatingMode">Offline · Secure · Cached</p>
+        <p id="operatingMode">Offline - Secure - Cached</p>
         <div class="helper">No telemetry. All computation on-device.</div>
       </div>
       <div class="topcard">
@@ -268,7 +268,7 @@
         <header class="hero-head">
           <div>
             <p class="eyebrow">Flagship Briefing</p>
-            <h2>📈 Live Mission Intelligence</h2>
+            <h2>Live Mission Intelligence</h2>
           </div>
           <div class="chip-group">
             <span class="tag" id="insightCompleteness">Datasets pending</span>
@@ -348,7 +348,7 @@
       <article class="card cathedral" id="dataOps">
         <div class="h">
           <div>
-            <h2>🔄 Data Engine &amp; Integrity</h2>
+            <h2>Data Engine &amp; Integrity</h2>
             <div class="helper">Load curated datasets, validate their freshness, and export signed packs for distribution.</div>
           </div>
           <div class="action-row">
@@ -386,22 +386,22 @@
         <div class="status-grid advanced">
           <div class="status-chip" id="statusCouncil" data-state="warn">
             <span class="title">Council timing</span>
-            <span class="value" id="ageCouncil">—</span>
+            <span class="value" id="ageCouncil">â€”</span>
             <span class="detail" id="statusCouncilDetail">Not loaded</span>
           </div>
           <div class="status-chip" id="statusAgency" data-state="warn">
             <span class="title">Agency referral</span>
-            <span class="value" id="ageAgency">—</span>
+            <span class="value" id="ageAgency">â€”</span>
             <span class="detail" id="statusAgencyDetail">Not loaded</span>
           </div>
           <div class="status-chip" id="statusBacklog" data-state="warn">
             <span class="title">Backlog risk</span>
-            <span class="value" id="ageBacklog">—</span>
+            <span class="value" id="ageBacklog">â€”</span>
             <span class="detail" id="statusBacklogDetail">Not loaded</span>
           </div>
           <div class="status-chip" id="statusFast" data-state="warn">
             <span class="title">Fast-track rules</span>
-            <span class="value" id="ageFastTrack">—</span>
+            <span class="value" id="ageFastTrack">â€”</span>
             <span class="detail" id="statusFastDetail">Not loaded</span>
           </div>
         </div>
@@ -413,7 +413,7 @@
       <article class="card cathedral" id="overlayEngine">
         <div class="h">
           <div>
-            <h2>🗺️ Overlay &amp; Net Buildable Engine</h2>
+            <h2>Overlay &amp; Net Buildable Engine</h2>
             <div class="helper">Project parcel + overlays into a high-resolution raster engine to derive deterministic buildable area.</div>
           </div>
           <div class="action-row">
@@ -438,23 +438,23 @@
           </div>
         </div>
         <div class="row" style="margin-top:8px">
-          <div class="pill"><div class="t">Parcel Area (m²)</div><div class="v" id="parcelAreaVal">—</div></div>
-          <div class="pill"><div class="t">Overlay Area (m², union)</div><div class="v" id="overlayAreaVal">—</div></div>
-          <div class="pill"><div class="t">Buildable Area (m²)</div><div class="v" id="buildableAreaVal">—</div></div>
+          <div class="pill"><div class="t">Parcel Area (mÂ²)</div><div class="v" id="parcelAreaVal">â€”</div></div>
+          <div class="pill"><div class="t">Overlay Area (mÂ², union)</div><div class="v" id="overlayAreaVal">â€”</div></div>
+          <div class="pill"><div class="t">Buildable Area (mÂ²)</div><div class="v" id="buildableAreaVal">â€”</div></div>
         </div>
         <div class="pill" style="margin-top:8px">
           <div class="t">Engine Status</div>
           <div id="overlayStatus" class="mono">idle</div>
         </div>
         <canvas id="mapCanvas" width="1024" height="420"></canvas>
-        <div class="foot">Offline geometry: projected to Web Mercator meters, rasterized at selected grid. Deterministic, bounded error &lt;= cell_area · perimeter_factor. Computation runs in a worker for stability.</div>
+        <div class="foot">Offline geometry: projected to Web Mercator meters, rasterized at selected grid. Deterministic, bounded error <= cell_area x perimeter_factor. Computation runs in a worker for stability.</div>
       </article>
     </section>
     <section class="macro-grid">
       <article class="card" id="timingPanel">
         <div class="h">
           <div>
-            <h2>⏱️ Approval Timing &amp; Risk</h2>
+            <h2>Approval Timing &amp; Risk</h2>
             <div class="helper">Blend council intelligence, referral lag, and backlog stressors to forecast determination timing.</div>
           </div>
           <button class="btn btn-gold" id="runTiming">Run Timing Model</button>
@@ -476,8 +476,8 @@
         </div>
         <div class="pill" style="margin-top:10px">
           <div class="t">Prediction</div>
-          <div class="v" id="timingSummary">—</div>
-          <div class="status warn" id="timingStatus">Awaiting data…</div>
+          <div class="v" id="timingSummary">â€”</div>
+          <div class="status warn" id="timingStatus">Awaiting dataâ€¦</div>
         </div>
         <details style="margin-top:8px"><summary>Data Provenance</summary>
           <pre id="timingProv" class="mono"></pre>
@@ -486,14 +486,14 @@
       <article class="card" id="feasPanel">
         <div class="h">
           <div>
-            <h2>📊 Feasibility Economics</h2>
+            <h2>Feasibility Economics</h2>
             <div class="helper">Stress-test the deal with holding, contingency, and yield metrics linked to timing outputs.</div>
           </div>
           <button class="btn btn-gold" id="runFeas">Run Feasibility</button>
         </div>
         <div class="row">
-          <div><label>Parcel Area (m²)</label><input id="parcelArea" type="number" step="1" min="0" /></div>
-          <div><label>Net Buildable Area (m²)</label><input id="buildableArea" type="number" step="1" min="0" /></div>
+          <div><label>Parcel Area (mÂ²)</label><input id="parcelArea" type="number" step="1" min="0" /></div>
+          <div><label>Net Buildable Area (mÂ²)</label><input id="buildableArea" type="number" step="1" min="0" /></div>
         </div>
         <div class="row" style="margin-top:8px">
           <div><label>Target Lots / Dwellings</label><input id="lots" type="number" step="1" min="0" /></div>
@@ -508,9 +508,9 @@
           <div><label>Contingency (%)</label><input id="contingency" type="number" step="0.5" min="0" /></div>
         </div>
         <div class="kpi" style="margin-top:10px">
-          <div class="pill"><div class="t">Revenue (AUD)</div><div class="v" id="kRev">—</div></div>
-          <div class="pill"><div class="t">Total Cost (AUD)</div><div class="v" id="kCost">—</div></div>
-          <div class="pill"><div class="t">Net Profit (AUD)</div><div class="v" id="kProfit">—</div></div>
+          <div class="pill"><div class="t">Revenue (AUD)</div><div class="v" id="kRev">â€”</div></div>
+          <div class="pill"><div class="t">Total Cost (AUD)</div><div class="v" id="kCost">â€”</div></div>
+          <div class="pill"><div class="t">Net Profit (AUD)</div><div class="v" id="kProfit">â€”</div></div>
         </div>
         <details style="margin-top:8px"><summary>Feasibility Breakdown</summary>
           <pre id="feasDetail" class="mono"></pre>
@@ -523,7 +523,7 @@
     <section class="card" id="controlDeck">
       <div class="h">
         <div>
-          <h2>🔒 Data Health &amp; Controls</h2>
+          <h2>Data Health &amp; Controls</h2>
           <div class="helper">All artefacts reside on this device. Purge cache to reset and reload trusted packs.</div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -534,7 +534,7 @@
       </div>
       <div class="foot">BLACKTOP runs offline, with deterministic compute and exportable evidence trails.</div>
     </section>
-    <div class="foot brand-foot">BLACKTOP © — External SSD mode. Offline-first. Production brief tooling built for TJ.</div>
+    <div class="foot brand-foot">BLACKTOP Â© â€” External SSD mode. Offline-first. Production brief tooling built for TJ.</div>
   </div>
   <div class="toast-stack" id="toastStack"></div>
   <script type="module">
@@ -578,7 +578,7 @@
   applySimpleMode(localStorage.getItem(SIMPLE_KEY)!=='0');
   function pushSessionLog(entry){ sessionLog.unshift({ts:new Date(), entry}); if(sessionLog.length>6) sessionLog.length=6; updateInsightNotes(); }
   const nowISO = () => new Date().toISOString();
-  const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : '—';
+  const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : 'â€”';
   const daysToMonths = d => d/30.4375;
   const log = (...a)=>{ const el=$('#upLog'); const line=a.join(' '); el.textContent += line+'\n'; el.scrollTop = el.scrollHeight; pushSessionLog(line); };
   const tryParse = (t)=>{ try{ return JSON.parse(t); }catch{ return null; } };
@@ -709,14 +709,14 @@
       el.addEventListener(evt, handler);
     }
   }
-  const ageFrom = obj => (!obj||!obj.lastUpdated)? '—' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
-  function updateOperatingMode(){ $('#operatingMode').textContent = store.get(LSK.policyAllowNet)? 'Offline • Startup refresh permitted' : 'Offline · Secure · Cached'; }
+  const ageFrom = obj => (!obj||!obj.lastUpdated)? 'â€”' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
+  function updateOperatingMode(){ $('#operatingMode').textContent = store.get(LSK.policyAllowNet)? 'Offline - Secure - Cached'; }
   const datasetFreshness = obj => {
     if(!obj) return {state:'warn', detail:'Not loaded', badge:'Awaiting dataset'};
-    if(!obj.lastUpdated){ return {state:'warn', detail:'Custom import • verify metadata', badge:'Custom dataset'}; }
+    if(!obj.lastUpdated){ return {state:'warn', detail:'Custom import â€¢ verify metadata', badge:'Custom dataset'}; }
     const ageDays = Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000);
     const state = ageDays>365? 'danger' : ageDays>180? 'warn' : 'ok';
-    const version = obj.version? ` · ${obj.version}` : '';
+    const version = obj.version? ` Â· ${obj.version}` : '';
     return {state, detail:`Updated ${obj.lastUpdated}${version}`, badge:`${ageDays} days old`};
   };
   function setTag(el, state, text){ if(!el) return; el.textContent = text; el.className = 'tag'+(state? ' '+state : ''); }
@@ -759,24 +759,24 @@
     const el = $('#insightNotes');
     if(!el) return;
     if(!sessionLog.length){ el.textContent = 'No actions recorded yet.'; return; }
-    const lines = sessionLog.slice(0,3).map(item=> `${item.ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — ${item.entry}`);
+    const lines = sessionLog.slice(0,3).map(item=> `${item.ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} â€” ${item.entry}`);
     el.textContent = lines.join('\n');
   }
   function updateInsightsFromStore(){
     const timing = store.get(LSK.lastTiming);
     if(timing){
       $('#insightTiming').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months)`;
-      $('#insightTimingMeta').textContent = `Risk ${timing.riskScore}/100 • ${timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'}`;
+      $('#insightTimingMeta').textContent = `Risk ${timing.riskScore}/100 â€¢ ${timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'}`;
       $('#timingSummary').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months). Risk ${timing.riskScore}/100. ${timing.fastTrackEligible? 'FAST-TRACK':'standard pathway'}`;
     }
     const feas = store.get(LSK.lastFeas);
     if(feas){
-      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; $('#insightFeasMeta').textContent = `Revenue ${fmtAUD(feas.revenue)} • Cost ${fmtAUD(feas.totalCost)}`;
+      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; $('#insightFeasMeta').textContent = `Revenue ${fmtAUD(feas.revenue)} â€¢ Cost ${fmtAUD(feas.totalCost)}`;
     }
     const build = store.get(LSK.buildable);
     if(build){
-      $('#insightBuildable').textContent = `${Math.round(build.buildableArea).toLocaleString('en-AU')} m² buildable`;
-      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(build.parcelArea).toLocaleString('en-AU')} m² • cell ${build.cellMeters} m`;
+      $('#insightBuildable').textContent = `${Math.round(build.buildableArea).toLocaleString('en-AU')} mÂ² buildable`;
+      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(build.parcelArea).toLocaleString('en-AU')} mÂ² â€¢ cell ${build.cellMeters} m`;
       $('#parcelAreaVal').textContent = Math.round(build.parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent = Math.round(build.overlayArea).toLocaleString('en-AU');
       $('#buildableAreaVal').textContent = Math.round(build.buildableArea).toLocaleString('en-AU');
@@ -1234,9 +1234,9 @@
     };
     ctx.diag.push(`[INFO] ingest start (${files.length} file(s))`);
     const expanded = await flattenIngestFiles(files, ctx);
-    ctx.diag.push(`� ${expanded.length} analyzable file(s)`);
+    ctx.diag.push(`ï¿½ ${expanded.length} analyzable file(s)`);
     for(const info of expanded){
-      ctx.diag.push(`� ${info.path}`);
+      ctx.diag.push(`ï¿½ ${info.path}`);
       try{
         if(info.ext==='json' || info.ext==='geojson'){
           const txt = await info.file.text();
@@ -1263,7 +1263,7 @@
     if(updatedKinds.length) summaryParts.push('updated: '+updatedKinds.join(', '));
     if(ctx.pendingGeom.length) summaryParts.push(ctx.pendingGeom.length+' geometry file(s) queued');
     if(ctx.errors.length) summaryParts.push(ctx.errors.length+' error(s)');
-    $('#ingestSummary').textContent = summaryParts.length ? summaryParts.join(' · ') : 'No recognizable datasets found';
+    $('#ingestSummary').textContent = summaryParts.length ? summaryParts.join(' Â· ') : 'No recognizable datasets found';
     $('#ingestDiagnostics').textContent = ctx.diag.join('\\n');
     refreshAges();
     notify('ok','Ingest complete.');
@@ -1350,7 +1350,7 @@
       const overlayArea = overlayPolys.flat().reduce((a,p)=> a+areaOfPolyMeters(p), 0);
       $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#overlayStatus').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} m² · Overlays ${Math.round(overlayArea).toLocaleString('en-AU')} m²`;
+      $('#overlayStatus').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} mÂ² Â· Overlays ${Math.round(overlayArea).toLocaleString('en-AU')} mÂ²`;
       ctx.geomSummary = { parcel: parcelArea, overlays: overlayArea };
       diag.push('[GEOM] geometry applied to canvas and store');
     }catch(err){
@@ -1359,12 +1359,12 @@
     }
   }
   async function runUpdater(manifest){
-    log('— Update start —', new Date().toLocaleString());
+    log('â€” Update start â€”', new Date().toLocaleString());
     const out = { ok:[], fail:[] };
     for(const src of manifest.sources||[]){
       try{ if(src.disabled){ log('skip', src.key, '(disabled)'); continue; }
         if(!src.url){ log('skip', src.key, '(no url)'); continue; }
-        log('pull', src.key, '→', src.url);
+        log('pull', src.key, 'â†’', src.url);
         const raw = await fetchJSON(src.url);
         let norm=null; if(src.key==='council') norm = normCouncil(raw); else if(src.key==='agency') norm = normAgency(raw); else if(src.key==='backlog') norm = normBacklog(raw); else if(src.key==='fast') norm = normFast(raw); else { log('warn unknown key', src.key); continue; }
         const checksum = crc32(JSON.stringify(norm)).toString(16); norm.checksum = checksum;
@@ -1372,7 +1372,7 @@
         out.ok.push(src.key); log('ok', src.key, '(crc32='+checksum+')');
       }catch(e){ out.fail.push({key:src.key, err:String(e.message||e)}); log('FAIL', src.key, '-', e.message||e); }
     }
-    refreshAges(); log('— Update end —'); return out;
+    refreshAges(); log('â€” Update end â€”'); return out;
   }
   const DEFAULT_MANIFEST = { sources:[
     {key:'council', url:'', disabled:true},
@@ -1475,9 +1475,9 @@
       }
     }catch(e){ /* ignore */ }
   }
-  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); $('#overlayStatus').textContent = 'Parcel loaded: '+f.name+' • area '+Math.round(area)+' m²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
+  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); $('#overlayStatus').textContent = 'Parcel loaded: '+f.name+' â€¢ area '+Math.round(area)+' mÂ²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
   $('#overlayFiles').addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); let total=0; overlayGeoms=[]; try{ for(const f of files){ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) continue; overlayGeoms.push(polys); total += polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); } store.put(LSK.overlays, overlayGeoms); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent = Math.round(total).toLocaleString('en-AU'); $('#overlayStatus').textContent = 'Loaded '+files.length+' overlay file(s)'; notify('ok','Overlay set updated.'); stampInsightUpdate(); }catch(err){ notify('danger','Overlay load failed: '+err.message); } });
-  $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent='—'; $('#overlayStatus').textContent='Overlays cleared.'; });
+  $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); $#overlayAreaVal.textContent='-'; $('#overlayStatus').textContent='Overlays cleared.'; });
   const workerCode = `
     self.onmessage = (ev)=>{
       const {parcel, overlays, resMeters} = ev.data;
@@ -1517,18 +1517,18 @@
   function attachWorkerHandlers(){
   worker.onmessage = (ev)=>{
     if(ev.data.type==='progress'){
-      $('#overlayStatus').textContent = `Computing… ${Math.round(100*ev.data.j/ev.data.height)}%`;
+      $('#overlayStatus').textContent = `Computingâ€¦ ${Math.round(100*ev.data.j/ev.data.height)}%`;
     }else if(ev.data.type==='done'){
       const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
       $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent  = Math.round(overlayArea).toLocaleString('en-AU');
       $('#buildableAreaVal').textContent= Math.round(buildableArea).toLocaleString('en-AU');
       $('#buildableArea').value = Math.round(buildableArea);
-      const status = `OK — cell ${cellMeters} m; parcel=${Math.round(parcelArea)} m²; overlay=${Math.round(overlayArea)} m²; buildable=${Math.round(buildableArea)} m²`;
+      const status = `OK â€” cell ${cellMeters} m; parcel=${Math.round(parcelArea)} mÂ²; overlay=${Math.round(overlayArea)} mÂ²; buildable=${Math.round(buildableArea)} mÂ²`;
       $('#overlayStatus').textContent = status;
       store.put(LSK.buildable, {ts: nowISO(), cellMeters, parcelArea, overlayArea, buildableArea});
-      $('#insightBuildable').textContent = `${Math.round(buildableArea).toLocaleString('en-AU')} m² buildable`;
-      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} m² • cell ${cellMeters} m`;
+      $('#insightBuildable').textContent = `${Math.round(buildableArea).toLocaleString('en-AU')} mÂ² buildable`;
+      $('#insightBuildableMeta').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} mÂ² â€¢ cell ${cellMeters} m`;
       stampInsightUpdate();
     }
   };
@@ -1541,7 +1541,7 @@
     const parcel = parcelGeom[0];
     const overlaysFlat = overlayGeoms.flat();
     if(!parcel){ notify('danger','Parcel polygon missing.'); return; }
-    $('#overlayStatus').textContent = 'Computing…';
+    $('#overlayStatus').textContent = 'Computingâ€¦';
     worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
   });
   $('#cancelBuildable').addEventListener('click', ()=>{ try{ worker.terminate(); }catch{}; worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'}))); attachWorkerHandlers(); $('#overlayStatus').textContent = 'Computation cancelled.'; notify('warn','Buildable compute cancelled.'); });
@@ -1569,7 +1569,7 @@
       const overlayArea = overlayGeoms.flat().reduce((sum,p)=> sum+areaOfPolyMeters(p),0);
       $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
       $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
-      $('#buildableAreaVal').textContent = '—';
+      $('#buildableAreaVal').textContent = 'â€”';
       store.del(LSK.buildable);
       $('#insightBuildable').textContent = 'Run buildable engine for net developable area.';
       $('#insightBuildableMeta').textContent = 'Select a resolution and press Compute Buildable.';
@@ -1642,10 +1642,10 @@
     $('#kProfit').textContent = fmtAUD(r.profit);
     const L=[
       `Assumed approval timeline: ${r.inputs.months.toFixed(2)} months`,
-      `Revenue = lots(${r.inputs.lots}) × price(${fmtAUD(r.inputs.price)}) = ${fmtAUD(r.revenue)}`,
+      `Revenue = lots(${r.inputs.lots}) Ã— price(${fmtAUD(r.inputs.price)}) = ${fmtAUD(r.revenue)}`,
       `Base cost = acquisition(${fmtAUD(r.inputs.acq)}) + infrastructure(${fmtAUD(r.inputs.infra)}) = ${fmtAUD(r.baseCost)}`,
       `Contingency ${Math.round(r.inputs.cont*100)}% = ${fmtAUD(r.contingency)}`,
-      `Holding (${(r.inputs.rate*100).toFixed(2)}% p.a.) × ${r.inputs.months.toFixed(2)} mo = ${fmtAUD(r.holding)}`,
+      `Holding (${(r.inputs.rate*100).toFixed(2)}% p.a.) Ã— ${r.inputs.months.toFixed(2)} mo = ${fmtAUD(r.holding)}`,
       `Total cost = ${fmtAUD(r.totalCost)}`,
       `Net profit = ${fmtAUD(r.profit)}`,
       `Break-even lots: ${r.beLots}`
@@ -1667,7 +1667,7 @@
     }catch(e){
       $('#insightFeas').textContent = 'Awaiting complete feasibility inputs.';
       $('#insightFeasMeta').textContent = e.message;
-      $('#kRev').textContent = $('#kCost').textContent = $('#kProfit').textContent = '—';
+      $('#kRev').textContent = $('#kCost').textContent = $('#kProfit').textContent = 'â€”';
     }
   }
   const scheduleFeas = debounce(runFeasAuto, 520);
@@ -1682,7 +1682,7 @@
   <script src="vendor/shp.min.js"></script>
 
 </head><body>
-      <h1>BLACKTOP — Development Brief</h1>
+      <h1>BLACKTOP â€” Development Brief</h1>
       <div class='muted'>Generated ${now}</div>
       <h2>Summary</h2>
       <div class='k'>
@@ -1695,7 +1695,7 @@
       <h2>Feasibility Details</h2>
       <table>
         <tr><th>Lots</th><td>${f.inputs.lots}</td><th>Price/lot</th><td>${fmtAUD(f.inputs.price)}</td></tr>
-        <tr><th>Parcel Area</th><td>${f.inputs.area} m²</td><th>Buildable Area</th><td>${f.inputs.buildable} m²</td></tr>
+        <tr><th>Parcel Area</th><td>${f.inputs.area} mÂ²</td><th>Buildable Area</th><td>${f.inputs.buildable} mÂ²</td></tr>
         <tr><th>Acquisition</th><td>${fmtAUD(f.inputs.acq)}</td><th>Infra/Const</th><td>${fmtAUD(f.inputs.infra)}</td></tr>
         <tr><th>Contingency</th><td>${(f.inputs.cont*100).toFixed(1)}%</td><th>Interest p.a.</th><td>${(f.inputs.rate*100).toFixed(2)}%</td></tr>
         <tr><th>Holding (months)</th><td>${f.inputs.months.toFixed(2)}</td><th>Break-even Lots</th><td>${f.beLots}</td></tr>
@@ -1740,7 +1740,7 @@
         const prev = worker.onmessage; worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
         worker.onerror = (e)=>{ rej(e); };
       });
-      $('#overlayStatus').textContent = 'Computing…'; worker.postMessage({parcel, overlays: overlaysFlat, resMeters: parseFloat($('#resSelect').value)||1});
+      $('#overlayStatus').textContent = 'Computingâ€¦'; worker.postMessage({parcel, overlays: overlaysFlat, resMeters: parseFloat($('#resSelect').value)||1});
       await done;
       $('#runTiming')?.click();
       $('#runFeas')?.click();
@@ -1757,7 +1757,7 @@
       const parcel = parcelGeom?.[0];
       const overlaysFlat = overlayGeoms.flat();
       if(!parcel){ notify('danger','Self-check failed: parcel missing'); return; }
-      $('#overlayStatus').textContent = 'Computing…';
+      $('#overlayStatus').textContent = 'Computingâ€¦';
       const done = new Promise((res, rej)=>{
         const prev = worker.onmessage;
         worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
@@ -1771,7 +1771,8 @@
     }catch(e){ notify('danger','Self-check error: '+(e.message||e)); }
   });
   /************ HOUSEKEEPING ************/
-  $('#clearLocal').addEventListener('click', async ()=>{ if(confirm('Clear cached datasets, geojsons, and last results?')){ await idbClear(); Object.values(LSK).forEach(store.del); notify('ok','Local cache cleared. Reloading…'); location.reload(); } });
+  $('#clearLocal').addEventListener('click', async ()=>{ if(confirm('Clear cached datasets, geojsons, and last results?')){ await idbClear(); Object.values(LSK).forEach(store.del); notify('ok','Local cache cleared. Reloadingâ€¦'); location.reload(); } });
 </script>
 </body>
 </html>
+
