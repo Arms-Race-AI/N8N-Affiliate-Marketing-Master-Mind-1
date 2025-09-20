@@ -1,0 +1,1936 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>BLACKTOP - TJ Command Deck (v0.9 - External SSD - Offline)</title>
+  <style>
+    :root{--bg:#02050c;--bg-alt:#0b1324;--panel:rgba(13,21,40,.92);--panel-strong:rgba(18,28,52,.96);--panel-soft:rgba(18,26,45,.86);--border:rgba(92,118,178,.55);--border-strong:rgba(132,166,255,.75);--accent:#f9d66d;--accent-soft:#ffe7a3;--accent-halo:rgba(249,214,109,.28);--electric:#5fd0ff;--electric-soft:rgba(95,208,255,.24);--emerald:#38f3b6;--emerald-soft:rgba(56,243,182,.2);--crimson:#ff6b86;--text:#f7f9ff;--muted:#9aa9ce;--muted-soft:#6e7aa3;--muted-dim:#3f4a6d;--shadow:0 40px 90px rgba(3,8,25,.75);--radius:22px}
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans','Inter','Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+    body{position:relative;overflow-x:hidden;min-height:100vh;background:radial-gradient(circle at 16% 18%,rgba(26,45,86,.55),transparent 48%),radial-gradient(circle at 82% 12%,rgba(64,32,98,.42),transparent 45%),linear-gradient(135deg,#02050c,#050910 55%,#0b1324);}
+    body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 12% 82%,rgba(18,118,209,.12),transparent 58%);mix-blend-mode:screen;opacity:.9;pointer-events:none;z-index:0}
+    body::after{content:"";position:fixed;inset:-60% -30%;background:radial-gradient(circle at center,rgba(6,20,44,.65),transparent 65%);filter:blur(60px);z-index:0;pointer-events:none}
+    .stellar{position:fixed;inset:0;z-index:1;pointer-events:none}
+    .stellar__aurora{position:absolute;inset:0;background:radial-gradient(circle at 20% 30%,rgba(111,175,255,.28),transparent 65%),radial-gradient(circle at 80% 70%,rgba(249,214,109,.2),transparent 60%);filter:blur(60px);animation:drift 20s linear infinite alternate}
+    .stellar__aurora--two{animation-duration:28s;mix-blend-mode:screen;transform:scale(1.2)}
+    .stellar__grid{position:absolute;inset:0;background-image:linear-gradient(rgba(31,52,88,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(31,52,88,.12) 1px,transparent 1px);background-size:90px 90px;opacity:.4;mask:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.45) 25%,rgba(0,0,0,.75) 70%,transparent 100%)}
+    @keyframes drift{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(2%,6%,0) scale(1.08)}}
+    .wrap{position:relative;z-index:2;width:min(1360px,94vw);margin:0 auto;padding:46px 0 120px;display:flex;flex-direction:column;gap:26px}
+    .brand{display:flex;flex-direction:column;gap:18px;padding:26px 28px;border-radius:var(--radius);background:linear-gradient(145deg,rgba(20,30,56,.92),rgba(10,16,32,.92));border:1px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .brand::before{content:"";position:absolute;inset:2px;border-radius:calc(var(--radius) - 6px);border:1px solid rgba(255,255,255,.04);background:linear-gradient(160deg,rgba(53,73,118,.12),transparent 60%);z-index:0}
+    .brand::after{content:"";position:absolute;inset:-40%;background:conic-gradient(from 120deg at 70% 30%,rgba(249,214,109,.12),transparent 55%);filter:blur(48px);z-index:0}
+    .brand > *{position:relative;z-index:1}
+    .brand-core{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+    .crest{display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(160deg,rgba(249,214,109,.18),rgba(17,27,46,.95));border:1px solid rgba(249,214,109,.35);box-shadow:0 18px 36px rgba(249,214,109,.18)}
+    .crest svg{width:34px;height:34px}
+    .brand h1{margin:0;font-size:30px;letter-spacing:.02em;font-weight:700}
+    .brand-meta{display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:13px}
+    .brand-meta .sub{padding:6px 12px;border-radius:999px;background:rgba(28,42,75,.6);border:1px solid rgba(92,118,178,.55);backdrop-filter:blur(6px);color:var(--muted)}
+    .brand-controls{display:flex;flex-wrap:wrap;gap:12px}
+    .quick-link{position:relative;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;background:rgba(17,25,44,.9);border:1px solid rgba(95,119,190,.4);color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+    .quick-link::after{content:">";font-size:12px;transition:transform .25s ease}
+    .quick-link:hover::after{transform:translateX(4px)}
+    /* Simple mode for larger fonts and fewer controls */
+    body.simple{font-size:18px}
+    body.simple .btn{padding:14px 18px;font-size:14px}
+    body.simple .helper{font-size:13px}
+    body.simple .advanced{display:none !important}
+    /* Guided overlay */
+    .guide{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:99}
+    .guide.active{display:flex}
+    .guide-panel{width:min(760px,92vw);background:var(--panel-strong);border:1px solid var(--border-strong);border-radius:20px;box-shadow:var(--shadow);padding:20px}
+    .guide-panel h2{margin:0 0 6px}
+    .guide-steps{display:grid;gap:10px;margin-top:6px}
+    .guide-steps .row{grid-template-columns:1fr auto}
+    .guide-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
+    .topbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+    .command-ribbon{position:relative;padding:18px;border-radius:32px;background:linear-gradient(140deg,rgba(17,27,46,.82),rgba(9,14,26,.92));border:1px solid rgba(82,112,180,.55);box-shadow:0 40px 90px rgba(6,12,28,.55);overflow:hidden}
+    .command-ribbon::before{content:"";position:absolute;inset:-30% -40%;background:radial-gradient(circle at 80% 30%,rgba(95,208,255,.18),transparent 60%);opacity:.75;pointer-events:none}
+    .command-ribbon::after{content:"";position:absolute;inset:6px;border-radius:24px;border:1px solid rgba(255,255,255,.04);pointer-events:none}
+    .command-ribbon > *{position:relative;z-index:1}
+    .topcard{position:relative;padding:22px 24px;border-radius:20px;background:linear-gradient(150deg,var(--panel),var(--panel-soft));border:1px solid rgba(95,126,198,.5);box-shadow:0 24px 48px rgba(7,12,28,.55);display:flex;flex-direction:column;gap:10px;overflow:hidden}
+    .topcard::before{content:"";position:absolute;inset:-20% -40%;background:radial-gradient(circle at 80% 30%,rgba(95,208,255,.26),transparent 55%);opacity:.65;pointer-events:none}
+    .topcard h3{margin:0;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600}
+    .topcard p{margin:0;font-size:18px;font-weight:600;color:var(--text)}
+    .topcard .helper{font-size:12px;color:var(--muted-soft)}
+    .topcard-actions{gap:14px}
+    .action-stack{display:flex;flex-wrap:wrap;gap:10px}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:22px;align-items:stretch}
+    @media(max-width:1080px){.hero-grid{grid-template-columns:1fr}}
+    .macro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
+    .card{position:relative;padding:28px;border-radius:24px;background:linear-gradient(160deg,var(--panel-strong),rgba(10,16,32,.92));border:1px solid var(--border);box-shadow:var(--shadow);backdrop-filter:blur(16px);overflow:hidden}
+    .card::before{content:"";position:absolute;inset:1px;border-radius:calc(24px - 6px);border:1px solid rgba(255,255,255,.035);pointer-events:none}
+    .card.highlight{border-color:var(--border-strong);box-shadow:0 50px 120px rgba(8,18,52,.65)}
+    .card.highlight::after{content:"";position:absolute;inset:-40% -30%;background:radial-gradient(circle at 60% 30%,var(--accent-halo),transparent 60%);opacity:.9;pointer-events:none}
+    .hero-intel{display:flex;flex-direction:column;gap:20px}
+    .hero-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+    .eyebrow{text-transform:uppercase;letter-spacing:.26em;font-size:12px;color:var(--muted-soft);margin:0}
+    h2{margin:0;font-size:26px;font-weight:700;letter-spacing:.01em}
+    .chip-group{display:flex;gap:10px;flex-wrap:wrap}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid rgba(95,118,198,.45);background:rgba(17,26,46,.92);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .tag.ok{color:var(--emerald);border-color:rgba(56,243,182,.45);background:rgba(12,44,34,.55)}
+    .tag.warn{color:var(--accent);border-color:rgba(249,214,109,.45);background:rgba(54,43,14,.45)}
+    .tag.danger{color:var(--crimson);border-color:rgba(255,107,134,.55);background:rgba(48,17,26,.6)}
+    .status{text-transform:uppercase;font-size:12px;letter-spacing:.18em;color:var(--muted);font-weight:600}
+    .status.ok{color:var(--emerald)}
+    .status.warn{color:var(--accent)}
+    .status.danger{color:var(--crimson)}
+    .insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .insight-block{padding:18px;border-radius:18px;background:linear-gradient(150deg,rgba(18,26,46,.92),rgba(11,16,28,.88));border:1px solid rgba(71,98,158,.55);display:flex;flex-direction:column;gap:6px;min-height:128px;position:relative;overflow:hidden}
+    .insight-block::after{content:"";position:absolute;inset:-30% -10%;background:radial-gradient(circle at 80% 20%,rgba(95,208,255,.18),transparent 55%);opacity:.7}
+    .insight-label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600}
+    .insight-value{font-size:18px;font-weight:600;color:var(--text);position:relative;z-index:1}
+    .insight-meta{font-size:12px;color:var(--muted-soft);position:relative;z-index:1}
+    .hero-footer{font-size:12px;color:var(--muted-soft);letter-spacing:.04em;text-transform:uppercase}
+    .hero-side{display:flex;flex-direction:column;gap:22px;padding:30px 26px;background:linear-gradient(170deg,rgba(15,24,44,.94),rgba(8,14,26,.9));border:1px solid rgba(104,139,215,.5)}
+    .mission-dial{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+    .dial{--progress:0;--visual-progress:0;--dial-color:var(--emerald);position:relative;width:160px;aspect-ratio:1;border-radius:50%;padding:16px;background:conic-gradient(var(--dial-color) calc(var(--visual-progress) * 1%),rgba(255,255,255,.08) 0);display:grid;place-items:center;border:1px solid rgba(80,118,188,.5);box-shadow:0 22px 44px rgba(10,18,36,.55)}
+    .dial[data-state="partial"]{--dial-color:var(--accent)}
+    .dial[data-state="pending"]{--dial-color:var(--crimson)}
+    .dial[data-state="ok"]{--dial-color:var(--emerald)}
+    .dial::after{content:"";position:absolute;inset:10px;border-radius:50%;background:linear-gradient(160deg,rgba(10,16,28,.92),rgba(19,32,56,.92));border:1px solid rgba(95,118,198,.45)}
+    .dial-inner{position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;align-items:center}
+    .dial-value{font-size:30px;font-weight:700;color:var(--accent-soft)}
+    .dial-label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+    .dial-caption{font-size:12px;color:var(--muted-soft);max-width:240px}
+    .mission-timeline{display:flex;flex-direction:column;gap:14px}
+    .timeline-step{display:flex;gap:14px;padding:12px 14px;border-radius:16px;background:rgba(15,22,40,.78);border:1px solid rgba(74,98,160,.5)}
+    .timeline-index{font-size:14px;font-weight:700;letter-spacing:.18em;color:var(--accent);min-width:32px;text-transform:uppercase}
+    .timeline-step h4{margin:0;font-size:15px;font-weight:600;color:var(--text)}
+    .timeline-step p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+    .mission-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .mission-meta-item{padding:12px 14px;border-radius:16px;background:rgba(12,20,38,.78);border:1px solid rgba(70,96,162,.45)}
+    .meta-label{text-transform:uppercase;font-size:11px;letter-spacing:.18em;color:var(--muted-soft)}
+    .meta-value{display:block;margin-top:6px;font-size:13px;color:var(--text);line-height:1.35}
+    .h{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    .helper{font-size:13px;color:var(--muted)}
+    .action-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .toggle{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.02em;color:var(--muted);text-transform:none}
+    input[type="checkbox"]{width:auto}
+    input,select,textarea{width:100%;background:rgba(8,14,28,.92);border:1px solid rgba(83,109,176,.6);color:var(--text);padding:12px 14px;border-radius:16px;font-size:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(129,173,255,.85);box-shadow:0 0 0 1px rgba(129,173,255,.4)}
+    label{display:block;font-size:12px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+    .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .row-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:12px}
+    .status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px}
+    .status-chip{position:relative;padding:18px;border-radius:18px;background:linear-gradient(160deg,rgba(13,22,42,.9),rgba(9,15,28,.88));border:1px solid rgba(73,104,170,.55);display:flex;flex-direction:column;gap:8px;transition:border .25s ease,transform .25s ease}
+    .status-chip .title{text-transform:uppercase;font-size:12px;letter-spacing:.16em;color:var(--muted-soft)}
+    .status-chip .value{font-size:19px;font-weight:700}
+    .status-chip .detail{font-size:12px;color:var(--muted)}
+    .status-chip[data-state="ok"]{border-color:rgba(56,243,182,.55);box-shadow:0 26px 48px rgba(16,46,38,.55)}
+    .status-chip[data-state="warn"]{border-color:rgba(249,214,109,.45);box-shadow:0 22px 44px rgba(54,42,18,.45)}
+    .status-chip[data-state="danger"]{border-color:rgba(255,107,134,.55);box-shadow:0 24px 50px rgba(56,18,26,.5)}
+    .pill{padding:16px;border-radius:18px;background:rgba(11,18,32,.85);border:1px solid rgba(76,108,175,.5);display:flex;flex-direction:column;gap:6px}
+    .pill .t{text-transform:uppercase;font-size:11px;letter-spacing:.16em;color:var(--muted-soft)}
+    .pill .v{font-size:20px;font-weight:700;color:var(--text)}
+    .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+    .btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:16px;background:linear-gradient(160deg,rgba(23,33,55,.96),rgba(12,18,30,.96));border:1px solid rgba(102,142,230,.6);color:var(--text);font-weight:600;font-size:14px;text-transform:none;letter-spacing:.02em;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,border .2s ease}
+    .btn::after{content:"";position:absolute;inset:1px;border-radius:inherit;border:1px solid rgba(255,255,255,.04);opacity:.6}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 18px 36px rgba(7,14,32,.55);border-color:rgba(140,176,255,.8)}
+    .btn-prim{background:linear-gradient(150deg,rgba(71,110,255,.7),rgba(26,40,86,.95));border-color:rgba(95,138,255,.8)}
+    .btn-gold{background:linear-gradient(150deg,rgba(249,214,109,.72),rgba(67,43,10,.92));color:#2b2106;border-color:rgba(249,214,109,.85);box-shadow:0 22px 44px rgba(249,214,109,.32)}
+    .btn-danger{background:linear-gradient(150deg,rgba(255,107,134,.75),rgba(56,18,24,.92));border-color:rgba(255,107,134,.8)}
+    details{background:rgba(9,16,32,.86);border:1px solid rgba(64,92,158,.55);border-radius:18px;padding:16px;margin-top:16px}
+    summary{cursor:pointer;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-soft)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;font-size:12px;color:var(--text)}
+    canvas{width:100%;height:420px;border-radius:22px;background:rgba(6,12,24,.92);border:1px solid rgba(68,100,166,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+    .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(92,118,178,.35),transparent);border:none;margin:20px 0}
+    .foot{color:var(--muted);font-size:12px}
+    .foot.brand-foot{text-align:center;margin-top:18px;letter-spacing:.08em;text-transform:uppercase}
+    .toast-stack{position:fixed;right:32px;bottom:32px;display:flex;flex-direction:column;gap:14px;z-index:60}
+    .toast{min-width:280px;max-width:360px;padding:18px 20px;border-radius:18px;background:linear-gradient(150deg,rgba(12,20,36,.96),rgba(8,12,22,.96));border:1px solid rgba(94,126,198,.6);box-shadow:0 28px 58px rgba(7,12,24,.6);display:flex;gap:12px;align-items:flex-start;color:var(--text);cursor:pointer;transition:transform .2s ease,opacity .2s ease}
+    .toast .label{text-transform:uppercase;letter-spacing:.18em;font-size:11px;color:var(--muted-soft)}
+    .toast .message{flex:1;font-size:13px}
+    .toast button{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+    .toast.ok{border-color:rgba(56,243,182,.6)}
+    .toast.warn{border-color:rgba(249,214,109,.6)}
+    .toast.danger{border-color:rgba(255,107,134,.7)}
+    @media(max-width:720px){.brand{padding:22px}.brand-controls{flex-direction:column;align-items:flex-start}.topbar{grid-template-columns:1fr}.hero-side{align-items:flex-start}.dial{width:140px}.row,.row-3{grid-template-columns:1fr}}
+      .ingest-report{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .ingest-report .pill{background:rgba(8,14,26,.92);border:1px solid rgba(92,118,188,.45);min-height:120px}
+    .ingest-report .pill .v{font-size:16px;color:var(--accent)}
+    .ingest-report .mono{background:rgba(4,8,18,.75);border-radius:14px;border:1px solid rgba(74,104,172,.45);padding:12px;margin:6px 0 0;max-height:180px;overflow:auto}
+    /* Start + Help + Long-press */
+    .start{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.7);z-index:100}
+    .start.active{display:flex}
+    .start-card{width:min(720px,94vw);padding:22px;border-radius:22px;background:linear-gradient(160deg,var(--panel-strong),rgba(10,16,32,.94));border:1px solid var(--border-strong);box-shadow:var(--shadow);text-align:center}
+    .start-title{margin:0 0 8px;font-size:24px}
+    .start-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px}
+    .start-foot{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:12px;margin-top:10px}
+    .help{position:fixed;inset:0;display:none;background:rgba(0,0,0,.65);z-index:98;align-items:center;justify-content:center}
+    .help.active{display:flex}
+    .help-panel{width:min(840px,94vw);max-height:80vh;overflow:auto;background:var(--panel-strong);border:1px solid var(--border-strong);border-radius:20px;padding:18px}
+    .help-list{display:grid;gap:8px;margin-top:10px}
+    .help-topic{padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+    .help-pop{position:fixed;max-width:320px;background:var(--panel-strong);border:1px solid var(--border-strong);border-radius:12px;padding:10px;z-index:110;color:var(--text);box-shadow:var(--shadow);display:none}
+    .help-pop .h{font-weight:700;margin:0 0 4px}
+    .help-pop .x{position:absolute;right:8px;top:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px}
+    .help-fab{position:fixed;left:22px;bottom:22px;z-index:70;border-radius:999px;padding:10px 14px;background:rgba(17,25,44,.9);border:1px solid rgba(95,119,190,.45);color:var(--accent);cursor:pointer}
+  </style>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/papaparse.min.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/shp.min.js"></script>
+
+  <script src="vendor/togeojson.js"></script>
+  <script src="vendor/proj4.min.js"></script>
+  <script src="vendor/martinez.min.js"></script>
+</head>
+<body>
+  <div class="stellar" aria-hidden="true">
+    <div class="stellar__aurora stellar__aurora--one"></div>
+    <div class="stellar__aurora stellar__aurora--two"></div>
+    <div class="stellar__grid"></div>
+  </div>
+  <div class="wrap">
+    <!-- Start Overlay -->
+    <div class="start" id="startOverlay" aria-hidden="true">
+      <div class="start-card">
+        <h2 class="start-title">Welcome to BLACKTOP</h2>
+        <div class="helper">Start here. Weâ€™ll guide you, or jump straight to help.</div>
+        <div class="start-actions">
+          <button class="btn btn-gold" id="startGuided">Start Guided Setup</button>
+          <button class="btn" id="startTutorial">Watch Tutorial</button>
+          <button class="btn" id="startHelp">Open Help</button>
+        </div>
+        <div class="start-foot"><label><input type="checkbox" id="startDontShow" /> Donâ€™t show this again</label></div>
+      </div>
+    </div>
+    <!-- Help Center -->
+    <div class="help" id="helpOverlay" aria-hidden="true">
+      <div class="help-panel">
+        <h2>Help Center</h2>
+        <input id="helpSearch" placeholder="Search helpâ€¦" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text)"/>
+        <div class="help-list" id="helpList">
+          <div class="help-topic" data-tags="start guided setup tutorial">Getting Started: Guided Setup and Tutorial</div>
+          <div class="help-topic" data-tags="parcel overlays geojson kml kmz shapefile">Loading Parcel and Overlay Files</div>
+          <div class="help-topic" data-tags="compute grid exact buildable vector">Compute Buildable: Grid vs Exact</div>
+          <div class="help-topic" data-tags="timing council referral backlog fast-track">Approval Timing & Risk</div>
+          <div class="help-topic" data-tags="feasibility economics lots price cost interest">Feasibility & Economics</div>
+          <div class="help-topic" data-tags="report evidence export verify checksum">Reports and Evidence Verification</div>
+        </div>
+        <div class="guide-actions"><button class="btn" id="helpClose">Close</button></div>
+      </div>
+    </div>
+    <!-- Guided Setup Overlay -->
+    <div class="guide" id="guideOverlay" aria-hidden="true">
+      <div class="guide-panel">
+        <h2>Guided Setup</h2>
+        <div class="helper">Follow these steps. We'll prompt for files when needed.</div>
+        <div class="guide-steps">
+          <div class="row">
+            <div>
+              <b>1. Load Data Files</b>
+              <div class="helper">CSV, Excel, JSON or a packed Data Pack</div>
+            </div>
+            <button class="btn" id="guidePickData">Pick Files</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>2. Load Parcel</b>
+              <div class="helper">GeoJSON, KML/KMZ, or Shapefile (.zip)</div>
+            </div>
+            <button class="btn" id="guidePickParcel">Pick Parcel</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>3. Load Overlays (optional)</b>
+              <div class="helper">Constraints/overlays as GeoJSON/KML/KMZ/Shape</div>
+            </div>
+            <button class="btn" id="guidePickOverlays">Pick Overlays</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>4. Compute Buildable</b>
+              <div class="helper">Runs the engine and fills areas</div>
+            </div>
+            <button class="btn btn-gold" id="guideCompute">Compute</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>5. Run Timing &amp; Feasibility</b>
+              <div class="helper">Forecast approval time and economics</div>
+            </div>
+            <button class="btn" id="guideAnalyze">Analyze</button>
+          </div>
+          <div class="row">
+            <div>
+              <b>6. Generate Report</b>
+              <div class="helper">Opens a printable briefing</div>
+            </div>
+            <button class="btn btn-prim" id="guideReport">Open Report</button>
+          </div>
+        </div>
+        <div class="guide-actions">
+          <button class="btn" id="guideClose">Close</button>
+        </div>
+      </div>
+    </div>
+    <header class="brand command-headline">
+      <div class="brand-core">
+        <span class="crest">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 17h5l4-10 4 10h5" stroke="#f9d66d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.8" fill="#f9d66d"/></svg>
+        </span>
+        <div>
+          <h1>BLACKTOP Ã¢â‚¬â€ TJ Command Deck</h1>
+          <div class="brand-meta">
+            <span class="sub">External SSD - Offline-first intelligence</span>
+            <span class="sub">Version 0.9 Ã‚Â· Production-tuned</span>
+            <span class="sub">Evergreen release with quantum hardening</span>
+          </div>
+        </div>
+      </div>
+      <div class="brand-controls">
+        <button class="btn" id="startButton" style="padding:8px 12px" data-help="Open the Start panel with setup, tutorial, and help.">Start</button>
+        <a class="quick-link" href="#dataOps">Data Engine</a>
+        <a class="quick-link" href="#overlayEngine">Overlay &amp; Buildable</a>
+        <a class="quick-link" href="#timingPanel">Timing &amp; Risk</a>
+        <a class="quick-link" href="#feasPanel">Feasibility</a>
+        <a class="quick-link" href="#controlDeck">Controls</a>
+      </div>
+    </header>
+    <div class="topbar command-ribbon">
+      <div class="topcard">
+        <h3>Operating Mode</h3>
+        <p id="operatingMode">Offline - Secure - Cached</p>
+        <div class="helper">No telemetry. All computation on-device.</div>
+      </div>
+      <div class="topcard">
+        <h3>Session Health</h3>
+        <p id="sessionHealth">Awaiting datasets</p>
+        <div class="helper">Load data pack or run updater to unlock predictions.</div>
+      </div>
+      <div class="topcard topcard-actions">
+        <h3>Executive Actions</h3>
+        <div class="action-stack">
+          <button class="btn btn-gold" id="loadDemo">Load Demo Scenario</button>
+          <button class="btn" id="guidedSetup">Guided Setup</button>
+          <button class="btn" id="runAll">Run All</button>
+          <button class="btn btn-prim" id="quickReport">Instant Report</button>
+        </div>
+        <div class="helper">Use Guided Setup for a simple, step-by-step flow.</div>
+      </div>
+    </div>
+    <section class="hero-grid">
+      <article class="card highlight hero-intel" id="insightCard">
+        <header class="hero-head">
+          <div>
+            <p class="eyebrow">Flagship Briefing</p>
+            <h2>Live Mission Intelligence</h2>
+          </div>
+          <div class="chip-group">
+            <span class="tag" id="insightCompleteness">Datasets pending</span>
+            <span class="tag" id="insightUpdated">Awaiting activity</span>
+          </div>
+        </header>
+        <div class="insight-grid">
+          <div class="insight-block">
+            <div class="insight-label">Timing outlook</div>
+            <div class="insight-value" id="insightTiming">Load datasets to begin.</div>
+            <div class="insight-meta" id="insightTimingMeta"></div>
+          </div>
+          <div class="insight-block">
+            <div class="insight-label">Feasibility snapshot</div>
+            <div class="insight-value" id="insightFeas">Awaiting feasibility run.</div>
+            <div class="insight-meta" id="insightFeasMeta"></div>
+          </div>
+          <div class="insight-block">
+            <div class="insight-label">Buildable summary</div>
+            <div class="insight-value" id="insightBuildable">Parcel not loaded.</div>
+            <div class="insight-meta" id="insightBuildableMeta"></div>
+          </div>
+          <div class="insight-block">
+            <div class="insight-label">Session log</div>
+            <div class="insight-value" id="insightNotes">No actions recorded yet.</div>
+            <div class="insight-meta">Updater + import events flow into the log automatically.</div>
+          </div>
+        </div>
+        <footer class="hero-footer">Realtime signals refresh as engines complete.</footer>
+      </article>
+      <aside class="card hero-side">
+        <div class="mission-dial">
+          <div class="dial" id="datasetProgress" data-state="pending" style="--progress:0">
+            <div class="dial-inner">
+              <span class="dial-value" id="datasetProgressValue">0%</span>
+              <span class="dial-label">Dataset Readiness</span>
+            </div>
+          </div>
+          <p class="dial-caption">Live coverage of essential data assets.</p>
+        </div>
+        <div class="mission-timeline">
+          <div class="timeline-step">
+            <span class="timeline-index">01</span>
+            <div>
+              <h4>Load curated intelligence</h4>
+              <p>Import manifests &amp; signed packs from the SSD vault.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <span class="timeline-index">02</span>
+            <div>
+              <h4>Model timing &amp; feasibility</h4>
+              <p>Execute deterministic engines for approvals + economics.</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <span class="timeline-index">03</span>
+            <div>
+              <h4>Export executive report</h4>
+              <p>Deliver printable dossiers with audit trails &amp; CRC seals.</p>
+            </div>
+          </div>
+        </div>
+        <div class="mission-meta">
+          <div class="mission-meta-item">
+            <span class="meta-label">Audit Trail</span>
+            <span class="meta-value">Encrypted session log with checksum attestation.</span>
+          </div>
+          <div class="mission-meta-item">
+            <span class="meta-label">Stability</span>
+            <span class="meta-value">Worker-isolated compute with deterministic rollbacks.</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+    <section class="macro-grid">
+      <article class="card cathedral" id="dataOps">
+        <div class="h">
+          <div>
+            <h2>Data Engine &amp; Integrity</h2>
+            <div class="helper">Load curated datasets, validate their freshness, and export signed packs for distribution.</div>
+          </div>
+          <div class="action-row">
+            <label class="toggle"><input type="checkbox" id="allowNet"> Allow network refresh at startup</label>
+            <button class="btn advanced" id="runUpdate">Run Update</button>
+            <button class="btn advanced" id="exportPack">Export Data Pack</button>
+            <button class="btn advanced" id="saveLog">Save Log</button>
+          </div>
+        </div>
+        <div class="row-3">
+          <div>
+            <label>Load Update Manifest (JSON)</label>
+            <input type="file" id="manifestInput" accept="application/json" />
+          </div>
+          <div>
+            <label>Import Data Pack (single JSON)</label>
+            <input type="file" id="packInput" accept="application/json" />
+          </div>
+          <div>
+            <label>Bulk Load from Folder (External SSD)</label>
+            <input type="file" id="dirMulti" webkitdirectory directory multiple />
+          </div>
+          <div>
+            <label>Intelligent Bulk Ingest (ZIP, CSV, Excel, Geo formats)</label>
+            <input type="file" id="ingestAny" multiple />
+          </div>
+        </div>
+        <div class="ingest-report">
+          <div class="pill">
+            <div class="t">Last ingest</div>
+            <div class="v" id="ingestSummary">Awaiting AI ingest.</div>
+            <pre class="mono" id="ingestDiagnostics"></pre>
+          </div>
+        </div>
+        <div class="status-grid advanced">
+          <div class="status-chip" id="statusCouncil" data-state="warn">
+            <span class="title">Council timing</span>
+            <span class="value" id="ageCouncil">Ã¢â‚¬â€</span>
+            <span class="detail" id="statusCouncilDetail">Not loaded</span>
+          </div>
+          <div class="status-chip" id="statusAgency" data-state="warn">
+            <span class="title">Agency referral</span>
+            <span class="value" id="ageAgency">Ã¢â‚¬â€</span>
+            <span class="detail" id="statusAgencyDetail">Not loaded</span>
+          </div>
+          <div class="status-chip" id="statusBacklog" data-state="warn">
+            <span class="title">Backlog risk</span>
+            <span class="value" id="ageBacklog">Ã¢â‚¬â€</span>
+            <span class="detail" id="statusBacklogDetail">Not loaded</span>
+          </div>
+          <div class="status-chip" id="statusFast" data-state="warn">
+            <span class="title">Fast-track rules</span>
+            <span class="value" id="ageFastTrack">Ã¢â‚¬â€</span>
+            <span class="detail" id="statusFastDetail">Not loaded</span>
+          </div>
+        </div>
+        <details>
+          <summary>Updater &amp; Import Log</summary>
+          <pre id="upLog" class="mono"></pre>
+        </details>
+      </article>
+      <article class="card cathedral" id="overlayEngine">
+        <div class="h">
+          <div>
+            <h2>Overlay &amp; Net Buildable Engine</h2>
+            <div class="helper">Project parcel + overlays into a high-resolution raster engine to derive deterministic buildable area.</div>
+          </div>
+        <div class="action-row">
+          <select id="resSelect" title="Grid resolution (meters)">
+            <option value="2">2 m</option>
+            <option value="1" selected>1 m</option>
+            <option value="0.5">0.5 m</option>
+          </select>
+          <select id="computeMode" title="Compute mode">
+            <option value="grid" selected>Grid (fast)</option>
+            <option value="vector">Exact (vector)</option>
+          </select>
+          <button class="btn btn-gold" id="calcBuildable" data-help="Compute net buildable area. Auto mode picks the best method.">Compute Buildable</button>
+          <button class="btn" id="cancelBuildable">Cancel Compute</button>
+          <button class="btn" id="clearOverlays">Clear Overlays</button>
+        </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Load Parcel (GeoJSON Polygon/MultiPolygon)</label>
+            <input type="file" id="parcelFile" accept=".json,.geojson,application/json" data-help="Load your parcel polygon as GeoJSON/KML/KMZ/Shapefile."/>
+          </div>
+          <div>
+            <label>Load Overlays (multiple GeoJSON)</label>
+            <input type="file" id="overlayFiles" accept=".json,.geojson,application/json" multiple data-help="Load constraints/overlays. You can select multiple files."/>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="pill"><div class="t">Parcel Area (mÃ‚Â²)</div><div class="v" id="parcelAreaVal">Ã¢â‚¬â€</div></div>
+          <div class="pill"><div class="t">Overlay Area (mÃ‚Â², union)</div><div class="v" id="overlayAreaVal">Ã¢â‚¬â€</div></div>
+          <div class="pill"><div class="t">Buildable Area (mÃ‚Â²)</div><div class="v" id="buildableAreaVal">Ã¢â‚¬â€</div></div>
+        </div>
+        <div class="pill" style="margin-top:8px">
+          <div class="t">Engine Status</div>
+          <div id="overlayStatus" class="mono">idle</div>
+        </div>
+        <canvas id="mapCanvas" width="1024" height="420"></canvas>
+        <div class="foot">Offline geometry: projected to Web Mercator meters, rasterized at selected grid. Deterministic, bounded error <= cell_area x perimeter_factor. Computation runs in a worker for stability.</div>
+      </article>
+    </section>
+    <section class="macro-grid">
+      <article class="card" id="timingPanel">
+        <div class="h">
+          <div>
+            <h2>Approval Timing &amp; Risk</h2>
+            <div class="helper">Blend council intelligence, referral lag, and backlog stressors to forecast determination timing.</div>
+          </div>
+          <button class="btn btn-gold" id="runTiming" data-help="Forecast approval timing and risk using your datasets.">Run Timing Model</button>
+        </div>
+        <div class="row">
+          <div><label>Council (LGA) Name</label><input id="councilName" placeholder="e.g. Liverpool City" list="councilList" /></div>
+          <div><label>Project Type</label>
+            <select id="projectType">
+              <option value="subdivision">Subdivision</option>
+              <option value="dual_occ">Dual Occupancy</option>
+              <option value="multi_dwelling">Multi-dwelling</option>
+              <option value="greenfield_estate">Greenfield Estate</option>
+              <option value="ssd">State Significant Development</option>
+            </select></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Project Value (AUD)</label><input id="projectValue" type="number" min="0" step="1000" placeholder="e.g. 30000000" /></div>
+          <div><label>Dwellings / Lots</label><input id="projectYield" type="number" min="0" step="1" placeholder="e.g. 45" /></div>
+        </div>
+        <div class="pill" style="margin-top:10px">
+          <div class="t">Prediction</div>
+          <div class="v" id="timingSummary">Ã¢â‚¬â€</div>
+          <div class="status warn" id="timingStatus">Awaiting dataÃ¢â‚¬Â¦</div>
+        </div>
+        <details style="margin-top:8px"><summary>Data Provenance</summary>
+          <pre id="timingProv" class="mono"></pre>
+        </details>
+      </article>
+      <article class="card" id="feasPanel">
+        <div class="h">
+          <div>
+            <h2>Feasibility Economics</h2>
+            <div class="helper">Stress-test the deal with holding, contingency, and yield metrics linked to timing outputs.</div>
+          </div>
+          <button class="btn btn-gold" id="runFeas" data-help="Calculate revenue, costs, and profit with your inputs.">Run Feasibility</button>
+        </div>
+        <div class="row">
+          <div><label>Parcel Area (mÃ‚Â²)</label><input id="parcelArea" type="number" step="1" min="0" /></div>
+          <div><label>Net Buildable Area (mÃ‚Â²)</label><input id="buildableArea" type="number" step="1" min="0" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Target Lots / Dwellings</label><input id="lots" type="number" step="1" min="0" /></div>
+          <div><label>Avg Sale Price per Lot (AUD)</label><input id="pricePerLot" type="number" step="1000" min="0" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Infra + Construction Cost (AUD)</label><input id="costInfra" type="number" step="1000" min="0" /></div>
+          <div><label>Acquisition + Stamp + Legal (AUD)</label><input id="costAcq" type="number" step="1000" min="0" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Annual Interest Rate (%)</label><input id="interestRate" type="number" step="0.05" min="0" /></div>
+          <div><label>Contingency (%)</label><input id="contingency" type="number" step="0.5" min="0" /></div>
+        </div>
+        <div class="kpi" style="margin-top:10px">
+          <div class="pill"><div class="t">Revenue (AUD)</div><div class="v" id="kRev">Ã¢â‚¬â€</div></div>
+          <div class="pill"><div class="t">Total Cost (AUD)</div><div class="v" id="kCost">Ã¢â‚¬â€</div></div>
+          <div class="pill"><div class="t">Net Profit (AUD)</div><div class="v" id="kProfit">Ã¢â‚¬â€</div></div>
+        </div>
+        <details style="margin-top:8px"><summary>Feasibility Breakdown</summary>
+          <pre id="feasDetail" class="mono"></pre>
+        </details>
+        <div class="hr"></div>
+        <button class="btn btn-prim" id="exportReport" data-help="Open a printable report with timing and feasibility.">Export Printable Report</button>
+        <div class="foot">If you ran Timing, its months feed holding costs automatically.</div>
+      </article>
+    </section>
+    <section class="card" id="controlDeck">
+      <div class="h">
+        <div>
+          <h2>Data Health &amp; Controls</h2>
+          <div class="helper">All artefacts reside on this device. Purge cache to reset and reload trusted packs.</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" id="selfTest">Run Self Check</button>
+          <button class="btn" id="exportEvidence">Export Evidence</button>
+          <button class="btn btn-danger" id="clearLocal">Purge Local Cache</button>
+        </div>
+        <datalist id="councilList"></datalist>
+      </div>
+      <div class="foot">BLACKTOP runs offline, with deterministic compute and exportable evidence trails.</div>
+    </section>
+    <div class="foot brand-foot">BLACKTOP - External SSD mode. Offline-first. Production brief tooling built for TJ.</div>
+  </div>
+  <div class="toast-stack" id="toastStack"></div>
+  <script type="module">
+
+  /************ CORE ************/
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const toastStackEl = document.querySelector('#toastStack');
+  function notify(type, message, opts={}){
+    const stack = toastStackEl;
+    if(!stack){ console[type==='danger'?'error':'log'](message); return; }
+    const el = document.createElement('div');
+    el.className = 'toast'+(type? ' '+type : '');
+    const content = document.createElement('div');
+    content.className = 'message';
+    content.textContent = message;
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = type==='danger'? 'Error' : type==='warn'? 'Notice' : 'Status';
+    const close = document.createElement('button');
+    close.setAttribute('aria-label','Dismiss');
+    close.innerHTML = '&times;';
+    const inner = document.createElement('div');
+    inner.style.display = 'flex';
+    inner.style.flexDirection = 'column';
+    inner.style.gap = '4px';
+    inner.append(label, content);
+    el.append(inner, close);
+    const remove = ()=>{ el.style.opacity='0'; el.style.transform='translateY(6px)'; setTimeout(()=> el.remove(), 220); };
+    close.addEventListener('click', e=>{ e.stopPropagation(); remove(); });
+    el.addEventListener('click', remove);
+    stack.appendChild(el);
+    const duration = opts.duration ?? 5200;
+    if(duration>0) setTimeout(remove, duration);
+  }
+  function debounce(fn, wait=400){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
+  const sessionLog = []; 
+  // Start + Help overlays and long-press help
+  const START_KEY = 'bt_seen_start';
+  function openStart(){ const el=document.getElementById('startOverlay'); if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
+  function closeStart(){ const el=document.getElementById('startOverlay'); if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
+  function openHelp(){ const el=document.getElementById('helpOverlay'); if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
+  function closeHelp(){ const el=document.getElementById('helpOverlay'); if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
+  const helpPop=document.createElement('div'); helpPop.className='help-pop'; helpPop.innerHTML='<button class="x" aria-label="Close">Ã—</button><div class="h">Help</div><div class="b"></div>'; document.body.appendChild(helpPop); helpPop.querySelector('.x').addEventListener('click', ()=> helpPop.style.display='none');
+  function findHelpTarget(el){ while(el && el!==document.body){ if(el.getAttribute && el.getAttribute('data-help')) return el; el=el.parentNode; } return null; }
+  function showHelpAt(el){ const txt=el.getAttribute('data-help'); if(!txt) return; const r=el.getBoundingClientRect(); const b=helpPop.querySelector('.b'); b.textContent=txt; helpPop.style.left = Math.max(10, Math.min(window.innerWidth-340, r.left+window.scrollX))+'px'; helpPop.style.top = (r.bottom+8+window.scrollY)+'px'; helpPop.style.display='block'; }
+  let lpTimer=null; let lpTarget=null; const LP_MS=600;
+  function lpStart(e){ const t=findHelpTarget(e.target); if(!t) return; lpTarget=t; clearTimeout(lpTimer); lpTimer=setTimeout(()=>{ showHelpAt(lpTarget); }, LP_MS); }
+  function lpEnd(){ clearTimeout(lpTimer); lpTimer=null; }
+  document.addEventListener('mousedown', lpStart, true);
+  document.addEventListener('touchstart', lpStart, {passive:true, capture:true});
+  document.addEventListener('mouseup', lpEnd, true);
+  document.addEventListener('touchend', lpEnd, {passive:true, capture:true});
+  // Bind start/help controls
+  document.getElementById('startButton').addEventListener('click', openStart);
+  document.getElementById('startGuided').addEventListener('click', ()=>{ closeStart(); openGuide(); });
+  document.getElementById('startTutorial').addEventListener('click', ()=>{ closeStart(); startTutorial(); });
+  document.getElementById('startHelp').addEventListener('click', ()=>{ closeStart(); openHelp(); });
+  document.getElementById('helpClose').addEventListener('click', closeHelp);
+  document.getElementById('openHelp')?.addEventListener('click', openHelp);
+  const fab=document.createElement('button'); fab.className='help-fab'; fab.textContent='Help'; fab.addEventListener('click', openHelp); document.body.appendChild(fab);
+  try{ if(localStorage.getItem(START_KEY)!=='1'){ openStart(); } }catch{}
+  document.getElementById('startDontShow').addEventListener('change', e=>{ try{ localStorage.setItem(START_KEY, e.target.checked? '1':'0'); }catch{} });
+  // Minimal tutorial (coach) â€” highlight key controls sequentially
+  function startTutorial(){
+    const steps=[
+      {sel:'#guidedSetup', text:'Guided Setup walks you through loading data and running the engines.'},
+      {sel:'#parcelFile', text:'Load your parcel (GeoJSON/KML/KMZ/Shapefile).'},
+      {sel:'#overlayFiles', text:'Load overlay constraints (optional).'},
+      {sel:'#calcBuildable', text:'Compute net buildable area.'},
+      {sel:'#runTiming', text:'Forecast approval timing & risk.'},
+      {sel:'#runFeas', text:'Calculate feasibility and export your report.'}
+    ];
+    let i=0; const spot=document.createElement('div'); spot.style.position='fixed'; spot.style.pointerEvents='none'; spot.style.border='2px solid var(--accent)'; spot.style.borderRadius='10px'; spot.style.zIndex='105'; const card=document.createElement('div'); card.style.position='fixed'; card.style.zIndex='106'; card.style.maxWidth='420px'; card.style.padding='12px'; card.style.border='1px solid var(--border)'; card.style.borderRadius='12px'; card.style.background='var(--panel-strong)'; card.style.color='var(--text)'; const btns=document.createElement('div'); btns.style.marginTop='8px'; btns.style.display='flex'; btns.style.gap='8px'; const next=document.createElement('button'); next.className='btn'; next.textContent='Next'; const back=document.createElement('button'); back.className='btn'; back.textContent='Back'; const skip=document.createElement('button'); skip.className='btn'; skip.textContent='Skip'; btns.append(back,next,skip); card.appendChild(btns); document.body.append(spot,card);
+    function render(){ const step=steps[i]; const el=document.querySelector(step.sel); if(!el){ nextStep(); return; } el.scrollIntoView({behavior:'smooth', block:'center'}); const r=el.getBoundingClientRect(); spot.style.left=(r.left-6+window.scrollX)+'px'; spot.style.top=(r.top-6+window.scrollY)+'px'; spot.style.width=(r.width+12)+'px'; spot.style.height=(r.height+12)+'px'; card.firstChild?.remove(); const p=document.createElement('div'); p.textContent=step.text; card.insertBefore(p, btns); card.style.left=Math.max(10, Math.min(window.innerWidth-440, r.left+window.scrollX))+'px'; card.style.top=(r.bottom+12+window.scrollY)+'px'; }
+    function cleanup(){ spot.remove(); card.remove(); }
+    function nextStep(){ i++; if(i>=steps.length){ cleanup(); return; } render(); }
+    function prevStep(){ if(i>0){ i--; render(); } }
+    next.addEventListener('click', nextStep); back.addEventListener('click', prevStep); skip.addEventListener('click', cleanup); render();
+  }
+  // Simple mode state
+  const SIMPLE_KEY = 'bt_simple_mode';
+  function applySimpleMode(on){ document.body.classList.toggle('simple', !!on); try{ localStorage.setItem(SIMPLE_KEY, on? '1':'0'); }catch{} }
+  applySimpleMode(localStorage.getItem(SIMPLE_KEY)!=='0');
+  function pushSessionLog(entry){ sessionLog.unshift({ts:new Date(), entry}); if(sessionLog.length>6) sessionLog.length=6; updateInsightNotes(); }
+  const nowISO = () => new Date().toISOString();
+  const fmtAUD = n => Number.isFinite(n)? n.toLocaleString('en-AU',{style:'currency',currency:'AUD',maximumFractionDigits:0}) : '-';
+  const daysToMonths = d => d/30.4375;
+  const log = (...a)=>{ const el=$('#upLog'); const line=a.join(' '); el.textContent += line+'\n'; el.scrollTop = el.scrollHeight; pushSessionLog(line); };
+  const tryParse = (t)=>{ try{ return JSON.parse(t); }catch{ return null; } };
+  const CRC32_TABLE = (()=>{ let c,t=[]; for(let n=0;n<256;n++){ c=n; for(let k=0;k<8;k++){ c = ((c&1)? (0xEDB88320^(c>>>1)) : (c>>>1)); } t[n]=c>>>0; } return t; })();
+  function crc32(str){ let c=0^(-1); for(let i=0;i<str.length;i++){ c = (c>>>8) ^ CRC32_TABLE[(c^str.charCodeAt(i))&0xFF]; } return (c^(-1))>>>0; }
+  const BUILTIN_SAMPLE = Object.freeze({
+    council: { version: '2025.09-DEV', lastUpdated: '2025-08-30', councils: [
+      { name: 'Liverpool City Council', avgDays:{ lodgement:30, assessment:87 }, n:1123 },
+      { name: 'Georges River Council', avgDays:{ lodgement:50, assessment:239 }, n:845 },
+      { name: 'Wingecarribee Shire Council', avgDays:{ lodgement:40, assessment:198 }, n:632 }
+    ]},
+    agency: { version: '2025.09-DEV', lastUpdated: '2025-08-30', agencies: [
+      { name:'Ausgrid', avgReferralDays:28 },
+      { name:'Heritage NSW', avgReferralDays:42 },
+      { name:'Transport for NSW', avgReferralDays:35 }
+    ]},
+    backlog: { lastUpdated: '2025-08-30', councils:[
+      { name:'Liverpool City Council', pending:420 },
+      { name:'Georges River Council', pending:550 },
+      { name:'Wingecarribee Shire Council', pending:310 }
+    ]},
+    fast: { lastUpdated:'2025-08-30', metroThreshold:{ value:60000000, dwellings:100 }, regionalThreshold:{ value:30000000, dwellings:40 } },
+    defaults: {
+      councilName: 'Liverpool City Council',
+      projectType: 'ssd',
+      projectValue: 75000000,
+      projectYield: 120,
+      parcelArea: 60000,
+      buildableArea: 42000,
+      lots: 120,
+      pricePerLot: 820000,
+      costInfra: 26500000,
+      costAcq: 18000000,
+      interestRate: 6.5,
+      contingency: 7.5
+    }
+  });
+  const DEMO_PARCEL = Object.freeze({
+    type:'Feature', properties:{id:'parcel1'}, geometry:{ type:'Polygon', coordinates:[[[151.0,-33.0],[151.0012,-33.0],[151.0012,-33.0012],[151.0,-33.0012],[151.0,-33.0]]] }
+  });
+  const DEMO_OVERLAY = Object.freeze({
+    type:'FeatureCollection', features:[{ type:'Feature', properties:{ name:'Overlay Zone' }, geometry:{ type:'Polygon', coordinates:[[[151.0004,-33.0002],[151.0008,-33.0002],[151.0008,-33.0006],[151.0004,-33.0006],[151.0004,-33.0002]]] } }]
+  });
+  /************ STORAGE ************/
+  const DB_NAME = 'BLACKTOP_DB';
+  const DB_VER  = 1;
+  let dbp = null;
+  function openDB(){ if(dbp) return dbp; dbp = new Promise((res,rej)=>{
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onupgradeneeded = ()=>{ const db = r.result; if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv'); };
+    r.onsuccess = ()=> res(r.result); r.onerror = ()=> rej(r.error);
+  }); return dbp; }
+  async function idbPut(key, value){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(value,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+  async function idbGet(key){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('kv','readonly'); const req=tx.objectStore('kv').get(key); req.onsuccess=()=>res(req.result??null); req.onerror=()=>rej(req.error); }); }
+  async function idbClear(){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('kv','readwrite'); tx.objectStore('kv').clear(); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+  const LSK = {
+    policyAllowNet: 'bt_allow_net',
+    manifest: 'bt_manifest',
+    council: 'bt_council',
+    agency: 'bt_agency',
+    backlog: 'bt_backlog',
+    fast: 'bt_fast',
+    lastTiming: 'bt_last_timing',
+    lastFeas: 'bt_last_feas',
+    parcel: 'bt_parcel_geojson',
+    overlays: 'bt_overlay_geojsons',
+    buildable: 'bt_buildable_result',
+    fieldCouncil: 'bt_field_council',
+    fieldProjectType: 'bt_field_project_type',
+    fieldProjectValue: 'bt_field_project_value',
+    fieldProjectYield: 'bt_field_project_yield',
+    fieldParcelArea: 'bt_field_parcel_area',
+    fieldBuildableArea: 'bt_field_buildable_area',
+    fieldLots: 'bt_field_lots',
+    fieldPrice: 'bt_field_price',
+    fieldInfra: 'bt_field_infra',
+    fieldAcq: 'bt_field_acq',
+    fieldInterest: 'bt_field_interest',
+    fieldCont: 'bt_field_cont'
+  };
+  const FIELD_KEY_MAP = {
+    councilName: LSK.fieldCouncil,
+    projectType: LSK.fieldProjectType,
+    projectValue: LSK.fieldProjectValue,
+    projectYield: LSK.fieldProjectYield,
+    parcelArea: LSK.fieldParcelArea,
+    buildableArea: LSK.fieldBuildableArea,
+    lots: LSK.fieldLots,
+    pricePerLot: LSK.fieldPrice,
+    costInfra: LSK.fieldInfra,
+    costAcq: LSK.fieldAcq,
+    interestRate: LSK.fieldInterest,
+    contingency: LSK.fieldCont
+  };
+  const store = {
+    put:(k,v)=> localStorage.setItem(k, JSON.stringify(v)),
+    get:(k,d=null)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): d; }catch{ return d; } },
+    del:(k)=> localStorage.removeItem(k)
+  };
+  function bindPersistentFields(){
+    const bindings = [
+      {id:'councilName', key:LSK.fieldCouncil, effect:()=>{ scheduleTiming(); }},
+      {id:'projectType', key:LSK.fieldProjectType, event:'change', effect:()=>{ scheduleTiming(); }},
+      {id:'projectValue', key:LSK.fieldProjectValue, effect:()=>{ scheduleTiming(); scheduleFeas(); }},
+      {id:'projectYield', key:LSK.fieldProjectYield, effect:()=>{ scheduleTiming(); scheduleFeas(); }},
+      {id:'parcelArea', key:LSK.fieldParcelArea, effect:()=>{ scheduleFeas(); }},
+      {id:'buildableArea', key:LSK.fieldBuildableArea, effect:()=>{ scheduleFeas(); }},
+      {id:'lots', key:LSK.fieldLots, effect:()=>{ scheduleFeas(); }},
+      {id:'pricePerLot', key:LSK.fieldPrice, effect:()=>{ scheduleFeas(); }},
+      {id:'costInfra', key:LSK.fieldInfra, effect:()=>{ scheduleFeas(); }},
+      {id:'costAcq', key:LSK.fieldAcq, effect:()=>{ scheduleFeas(); }},
+      {id:'interestRate', key:LSK.fieldInterest, effect:()=>{ scheduleFeas(); }},
+      {id:'contingency', key:LSK.fieldCont, effect:()=>{ scheduleFeas(); }}
+    ];
+    for(const bind of bindings){
+      const el = document.getElementById(bind.id);
+      if(!el) continue;
+      const saved = store.get(bind.key);
+      if(saved!==null && saved!==undefined){
+        if(el.type==='checkbox') el.checked = !!saved; else el.value = saved;
+      }
+      const handler = ()=>{
+        const value = el.type==='checkbox'? el.checked : el.value;
+        store.put(bind.key, value);
+        if(bind.effect) bind.effect();
+      };
+      const evt = bind.event || (el.tagName==='SELECT'? 'change':'input');
+      el.addEventListener(evt, handler);
+    }
+  }
+  const ageFrom = obj => (!obj||!obj.lastUpdated)? '-' : (Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000)+' days');
+  function updateOperatingMode(){ #"+$m.Groups[1].Value+".textContent = store.get(LSK.policyAllowNet)? 'Offline - Startup refresh permitted' : 'Offline - Secure - Cached'; }
+  const datasetFreshness = obj => {
+    if(!obj) return {state:'warn', detail:'Not loaded', badge:'Awaiting dataset'};
+    if(!obj.lastUpdated){ return {state:'warn', detail:'Custom import Ã¢â‚¬Â¢ verify metadata', badge:'Custom dataset'}; }
+    const ageDays = Math.floor((Date.now()- new Date(obj.lastUpdated).getTime())/86400000);
+    const state = ageDays>365? 'danger' : ageDays>180? 'warn' : 'ok';
+    const version = obj.version? ` Ã‚Â· ${obj.version}` : '';
+    return {state, detail:`Updated ${obj.lastUpdated}${version}`, badge:`${ageDays} days old`};
+  };
+  function setTag(el, state, text){ if(!el) return; el.textContent = text; el.className = 'tag'+(state? ' '+state : ''); }
+  function updateDatasetBadges(){
+    const config = [
+      {key:'council', chip:'#statusCouncil', detail:'#statusCouncilDetail'},
+      {key:'agency',  chip:'#statusAgency',  detail:'#statusAgencyDetail'},
+      {key:'backlog', chip:'#statusBacklog', detail:'#statusBacklogDetail'},
+      {key:'fast',    chip:'#statusFast',    detail:'#statusFastDetail'}
+    ];
+    let ok=0, warn=0;
+    for(const cfg of config){
+      const data = store.get(LSK[cfg.key]);
+      const ageEl = document.getElementById('age'+cfg.key.charAt(0).toUpperCase()+cfg.key.slice(1));
+      if(ageEl) ageEl.textContent = ageFrom(data);
+      const chip = $(cfg.chip);
+      const detailEl = $(cfg.detail);
+      const freshness = datasetFreshness(data);
+      if(chip) chip.dataset.state = freshness.state;
+      if(detailEl) detailEl.textContent = freshness.detail;
+      if(freshness.state==='ok') ok++; else warn++;
+    }
+    const completeness = $('#insightCompleteness');
+    if(ok===config.length){ setTag(completeness, 'ok', 'Datasets ready'); }
+    else if(ok>0){ setTag(completeness, 'warn', `${config.length-ok} dataset${config.length-ok===1?'':'s'} pending`); }
+    else { setTag(completeness, 'danger', 'Datasets pending'); }
+    $('#sessionHealth').textContent = ok===config.length? 'All datasets verified' : ok>0? 'Partial dataset coverage' : 'Awaiting datasets';
+    const gauge = $('#datasetProgress');
+    const gaugeValue = $('#datasetProgressValue');
+    if(gauge){
+      const pct = config.length? Math.round((ok/config.length)*100) : 100;
+      const visual = ok===config.length? 100 : ok===0? 8 : Math.max(pct, 32);
+      gauge.style.setProperty('--progress', pct);
+      gauge.style.setProperty('--visual-progress', visual);
+      gauge.dataset.state = ok===config.length? 'ok' : ok===0? 'pending' : 'partial';
+      if(gaugeValue) gaugeValue.textContent = `${pct}%`;
+    }
+  }
+  function updateInsightNotes(){
+    const el = $('#insightNotes');
+    if(!el) return;
+    if(!sessionLog.length){ el.textContent = 'No actions recorded yet.'; return; }
+    const lines = sessionLog.slice(0,3).map(item=> item.ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' - ' + item.entry);
+    el.textContent = lines.join('\n');
+  }
+  function updateInsightsFromStore(){
+    const timing = store.get(LSK.lastTiming);
+    if(timing){
+      $('#insightTiming').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months)`;
+      #"+$m.Groups[1].Value+".textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway');
+      $('#timingSummary').textContent = `${timing.council}: ${timing.totalDays} days (~${timing.months} months). Risk ${timing.riskScore}/100. ${timing.fastTrackEligible? 'FAST-TRACK':'standard pathway'}`;
+    }
+    const feas = store.get(LSK.lastFeas);
+    if(feas){
+      $('#insightFeas').textContent = `${fmtAUD(feas.profit)} net profit`; #"+$m.Groups[1].Value+".textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
+    }
+    const build = store.get(LSK.buildable);
+    if(build){
+      #"+$m.Groups[1].Value+".textContent = 'Run buildable engine for net developable area.';
+      #"+$m.Groups[1].Value+".textContent = 'Select a resolution and press Compute Buildable.';
+      $('#parcelAreaVal').textContent = Math.round(build.parcelArea).toLocaleString('en-AU');
+      $('#overlayAreaVal').textContent = Math.round(build.overlayArea).toLocaleString('en-AU');
+      $('#buildableAreaVal').textContent = Math.round(build.buildableArea).toLocaleString('en-AU');
+      $('#buildableArea').value = Math.round(build.buildableArea);
+    }
+    updateInsightNotes();
+    populateCouncilDatalist();
+  }
+  function populateCouncilDatalist(){
+    try{
+      const list = document.getElementById('councilList');
+      const inp = document.getElementById('councilName');
+      if(!list || !inp) return;
+      const c = store.get(LSK.council);
+      const names = (c?.councils||[]).map(x=> x.name).filter(Boolean);
+      list.innerHTML = names.map(n=> `<option value="${n.replace(/&/g,'&amp;')}"></option>`).join('');
+      if(!inp.value && names.length){ inp.value = names[0]; }
+    }catch{}
+  }
+  function stampInsightUpdate(){ const tag=$('#insightUpdated'); if(tag) setTag(tag, 'ok', 'Updated '+new Date().toLocaleTimeString()); }
+  const refreshAges = ()=>{ updateDatasetBadges(); updateInsightsFromStore(); };
+  /************ NORMALIZERS ************/
+  function normCouncil(raw){
+    if(raw && raw.councils && raw.lastUpdated) return raw;
+    if(Array.isArray(raw)){
+      const councils = raw.map(r=>({
+        name: String(r.name||r.council||'').trim(),
+        avgDays: { lodgement: Number(r.lodgement||r.lodge||0), assessment: Number(r.assessment||r.decision||0) },
+        n: Number(r.n||r.count||0)
+      })).filter(x=> x.name);
+      if(!councils.length) throw new Error('Council export missing usable rows');
+      return { version: 'custom', lastUpdated: nowISO().slice(0,10), councils };
+    }
+    throw new Error('Unrecognized council_timing shape');
+  }
+  function normAgency(raw){
+    if(raw && raw.agencies && raw.lastUpdated) return raw;
+    if(Array.isArray(raw)){
+      const agencies = raw.map(r=>({ name: String(r.name||r.agency||'').trim(), avgReferralDays: Number(r.avgReferralDays||r.days||0) })).filter(x=>x.name);
+      return { version:'custom', lastUpdated: nowISO().slice(0,10), agencies };
+    }
+    throw new Error('Unrecognized agency_referral shape');
+  }
+  function normBacklog(raw){
+    if(raw && raw.councils && raw.lastUpdated) return raw;
+    if(Array.isArray(raw)){
+      const councils = raw.map(r=>({ name: String(r.name||r.council||'').trim(), pending: Number(r.pending||r.backlog||0) })).filter(x=>x.name);
+      return { lastUpdated: nowISO().slice(0,10), councils };
+    }
+    throw new Error('Unrecognized backlog_risk shape');
+  }
+  function normFast(raw){
+    if(raw && raw.metroThreshold && raw.regionalThreshold) return raw;
+    if(raw && (raw.metro||raw.regional)){
+      return { lastUpdated: nowISO().slice(0,10), metroThreshold: raw.metro, regionalThreshold: raw.regional };
+    }
+    throw new Error('Unrecognized fast_track_rules shape');
+  }
+  const INGEST_HEADER_HINTS = {
+    council: {
+      name: ['council','lga','local government','authority','city','shire'],
+      lodgement: ['lodgement','lodgment','submission','lodgement days','lodgment days','lodgement avg','lodgement mean','lodgement time','lodgement timeframe'],
+      assessment: ['assessment','determination','decision','processing','assessment days','decision days','processing days','assessment timeframe'],
+      count: ['n','count','samples','volume','cases','applications','observations','records']
+    },
+    agency: {
+      name: ['agency','referral','authority','department','utility','consultant'],
+      days: ['days','lag','referral','turnaround','response','sla','processing']
+    },
+    backlog: {
+      name: ['council','lga','authority','city','shire'],
+      pending: ['pending','backlog','on hand','in queue','inventory','open','pipeline','waiting','work in progress','wip']
+    },
+    fast: {
+      label: ['category','pathway','type','stream','classification','tier','group','cohort'],
+      value: ['threshold','value','limit','cap','trigger','amount','days','duration']
+    }
+  };
+  const GEOJSON_TYPES = new Set(['featurecollection','feature','polygon','multipolygon','geometrycollection','linestring','multilinestring','point','multipoint']);
+  function normHeader(name){ return String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+  function columnScore(header, hints){
+    const norm = normHeader(header);
+    if(!norm) return 0;
+    let best=0;
+    for(const raw of hints){
+      const target = raw.toLowerCase();
+      if(!target) continue;
+      if(norm===target) best=Math.max(best,10);
+      else if(norm.includes(target)) best=Math.max(best,6);
+      else{
+        const words = target.split(' ').filter(Boolean);
+        if(!words.length) continue;
+        let hits=0;
+        for(const w of words){ if(norm.includes(w)) hits++; }
+        if(hits) best=Math.max(best,2+hits);
+      }
+    }
+    return best;
+  }
+  function pickColumn(columns, hints){
+    let best=null;
+    for(const col of columns){
+      const score = columnScore(col, hints);
+      if(score>0 && (!best || score>best.score)) best={key:col, score};
+    }
+    return best;
+  }
+  function toNumber(val){
+    if(val===null||val===undefined) return NaN;
+    if(typeof val==='number') return isFinite(val)? val : NaN;
+    if(typeof val==='string'){
+      const cleaned = val.replace(/[^0-9\-\.]+/g,'');
+      if(!cleaned) return NaN;
+      return Number(cleaned);
+    }
+    return Number(val);
+  }
+  function numericConfidence(rows, key){
+    let total=0, good=0;
+    for(const row of rows){
+      if(!row || !(key in row)) continue;
+      const raw=row[key];
+      if(raw===null || raw===undefined || raw==='') continue;
+      total++;
+      const v=toNumber(raw);
+      if(isFinite(v)) good++;
+    }
+    return total? good/total : 0;
+  }
+  function columnUniverse(rows){
+    const set=new Set();
+    for(const row of rows){
+      if(!row) continue;
+      for(const key of Object.keys(row)){ set.add(key); }
+    }
+    return Array.from(set);
+  }
+  function detectCouncil(rows){
+    if(!Array.isArray(rows) || !rows.length) return null;
+    const columns = columnUniverse(rows);
+    const nameCol = pickColumn(columns, INGEST_HEADER_HINTS.council.name);
+    const lodgementCol = pickColumn(columns, INGEST_HEADER_HINTS.council.lodgement);
+    const assessmentCol = pickColumn(columns, INGEST_HEADER_HINTS.council.assessment);
+    if(!nameCol || !lodgementCol || !assessmentCol) return null;
+    if(numericConfidence(rows, lodgementCol.key)<0.45 || numericConfidence(rows, assessmentCol.key)<0.45) return null;
+    const countCol = pickColumn(columns, INGEST_HEADER_HINTS.council.count);
+    const shaped=[];
+    for(const row of rows){
+      const name=String(row[nameCol.key]??'').trim();
+      if(!name) continue;
+      const lodge=toNumber(row[lodgementCol.key]);
+      const assess=toNumber(row[assessmentCol.key]);
+      if(!isFinite(lodge) || !isFinite(assess)) continue;
+      const samples = countCol? toNumber(row[countCol.key]) : 0;
+      shaped.push({ name, lodgement:lodge, assessment:assess, n:isFinite(samples)? samples:0 });
+    }
+    if(!shaped.length) return null;
+    let normed;
+    try{ normed = normCouncil(shaped); }
+    catch(err){ return null; }
+    const score = shaped.length*2 + nameCol.score + lodgementCol.score + assessmentCol.score + (countCol?countCol.score:0);
+    return { kind:'council', norm:normed, rows:shaped.length, score, detail:`council columns ${nameCol.key}/${lodgementCol.key}/${assessmentCol.key}` };
+  }
+  function detectAgency(rows){
+    if(!Array.isArray(rows) || !rows.length) return null;
+    const columns = columnUniverse(rows);
+    const nameCol = pickColumn(columns, INGEST_HEADER_HINTS.agency.name);
+    const daysCol = pickColumn(columns, INGEST_HEADER_HINTS.agency.days);
+    if(!nameCol || !daysCol) return null;
+    if(numericConfidence(rows, daysCol.key)<0.45) return null;
+    const shaped=[];
+    for(const row of rows){
+      const name=String(row[nameCol.key]??'').trim();
+      if(!name) continue;
+      const days=toNumber(row[daysCol.key]);
+      if(!isFinite(days)) continue;
+      shaped.push({ name, days });
+    }
+    if(!shaped.length) return null;
+    let normed;
+    try{ normed = normAgency(shaped); }
+    catch(err){ return null; }
+    const score = shaped.length*1.5 + nameCol.score + daysCol.score;
+    return { kind:'agency', norm:normed, rows:shaped.length, score, detail:`agency columns ${nameCol.key}/${daysCol.key}` };
+  }
+  function detectBacklog(rows){
+    if(!Array.isArray(rows) || !rows.length) return null;
+    const columns = columnUniverse(rows);
+    const nameCol = pickColumn(columns, INGEST_HEADER_HINTS.backlog.name);
+    const pendingCol = pickColumn(columns, INGEST_HEADER_HINTS.backlog.pending);
+    if(!nameCol || !pendingCol) return null;
+    if(numericConfidence(rows, pendingCol.key)<0.35) return null;
+    const shaped=[];
+    for(const row of rows){
+      const name=String(row[nameCol.key]??'').trim();
+      if(!name) continue;
+      const pending=toNumber(row[pendingCol.key]);
+      if(!isFinite(pending)) continue;
+      shaped.push({ name, pending });
+    }
+    if(!shaped.length) return null;
+    let normed;
+    try{ normed = normBacklog(shaped); }
+    catch(err){ return null; }
+    const score = shaped.length + nameCol.score + pendingCol.score;
+    return { kind:'backlog', norm:normed, rows:shaped.length, score, detail:`backlog columns ${nameCol.key}/${pendingCol.key}` };
+  }
+  function detectFast(rows){
+    if(!Array.isArray(rows) || !rows.length) return null;
+    const columns = columnUniverse(rows);
+    const direct = { metro:null, regional:null };
+    for(const col of columns){
+      const norm = normHeader(col);
+      if(norm.includes('metro')) direct.metro = col;
+      if(norm.includes('regional') || norm.includes('non metro') || norm.includes('rural')) direct.regional = col;
+    }
+    let candidateMeta=null;
+    if(direct.metro && direct.regional){
+      const first = rows.find(r=>r && (r[direct.metro]!==undefined || r[direct.regional]!==undefined));
+      if(first){
+        const metro=toNumber(first[direct.metro]);
+        const regional=toNumber(first[direct.regional]);
+        if(isFinite(metro) && isFinite(regional)){
+          try{ const normed = normFast({metro, regional}); return { kind:'fast', norm:normed, rows:1, score:40, detail:`fast direct columns ${direct.metro}/${direct.regional}` }; }
+          catch(err){ /* continue fallback */ }
+        }
+      }
+    }
+    const labelCol = pickColumn(columns, INGEST_HEADER_HINTS.fast.label) || pickColumn(columns, INGEST_HEADER_HINTS.council.name);
+    const valueCol = pickColumn(columns, INGEST_HEADER_HINTS.fast.value);
+    if(!labelCol || !valueCol) return null;
+    if(numericConfidence(rows, valueCol.key)<0.35) return null;
+    let metro=null, regional=null;
+    for(const row of rows){
+      const rawLabel = String(row[labelCol.key]??'').toLowerCase();
+      const value = toNumber(row[valueCol.key]);
+      if(!isFinite(value)) continue;
+      if(rawLabel.includes('metro') || rawLabel.includes('metropolitan')){
+        metro = metro===null? value : Math.max(metro,value);
+      }else if(rawLabel.includes('regional') || rawLabel.includes('non metro') || rawLabel.includes('rural')){
+        regional = regional===null? value : Math.max(regional,value);
+      }
+    }
+    if(metro===null || regional===null) return null;
+    let normed;
+    try{ normed = normFast({metro, regional}); }
+    catch(err){ return null; }
+    const score = 25 + (labelCol.score||0) + (valueCol.score||0);
+    return { kind:'fast', norm:normed, rows:rows.length, score, detail:`fast via ${labelCol.key}/${valueCol.key}` };
+  }
+  function analyzeTabular(rows){
+    const candidates=[];
+    const council = detectCouncil(rows); if(council) candidates.push(council);
+    const agency = detectAgency(rows); if(agency) candidates.push(agency);
+    const backlog = detectBacklog(rows); if(backlog) candidates.push(backlog);
+    const fast = detectFast(rows); if(fast) candidates.push(fast);
+    return candidates;
+  }
+  function isLikelyGeoJSON(obj){
+    if(!obj || typeof obj!=='object') return false;
+    const type = (obj.type||'').toLowerCase();
+    if(GEOJSON_TYPES.has(type)) return true;
+    if(type==='') return false;
+    return false;
+  }
+  function isPlainObject(val){ return !!val && typeof val==='object' && !Array.isArray(val); }
+  function flattenJsonArrays(obj, limit=6){
+    const out=[];
+    if(Array.isArray(obj)){ if(obj.length && typeof obj[0]==='object') out.push(obj); return out; }
+    if(!isPlainObject(obj)) return out;
+    for(const key of Object.keys(obj)){
+      const val = obj[key];
+      if(Array.isArray(val) && val.length && typeof val[0]==='object') out.push(val);
+      if(out.length>=limit) break;
+    }
+    return out;
+  }
+  function ingestCandidate(ctx, kind, candidate, source){
+    const slot = ctx.best[kind];
+    if(candidate.score > slot.score){
+      store.put(LSK[kind], candidate.norm);
+      ctx.best[kind] = { score:candidate.score, rows:candidate.rows, detail:candidate.detail, source:source, ts: nowISO() };
+      ctx.updated.add(kind);
+      ctx.successes.push(`${kind} <= ${source}`);
+      ctx.diag.push(`[OK] ${kind} updated from ${source} (${candidate.rows} rows)`);
+    } else {
+      ctx.diag.push(`[SKIP] ${kind} candidate from ${source} skipped (score ${candidate.score.toFixed(1)} <= ${slot.score.toFixed(1)})`);
+    }
+  }
+  function extOf(name){ const lower = String(name||'').toLowerCase(); const idx = lower.lastIndexOf('.'); return idx===-1? '' : lower.slice(idx+1); }
+  function guessMime(name){
+    const ext = extOf(name);
+    if(ext==='csv') return 'text/csv';
+    if(ext==='tsv') return 'text/tab-separated-values';
+    if(ext==='json' || ext==='geojson') return 'application/json';
+    if(ext==='xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if(ext==='xls') return 'application/vnd.ms-excel';
+    if(ext==='kml') return 'application/vnd.google-earth.kml+xml';
+    if(ext==='kmz') return 'application/vnd.google-earth.kmz';
+    if(ext==='zip') return 'application/zip';
+    if(ext==='html' || ext==='htm') return 'text/html';
+    return '';
+  }
+  async function flattenIngestFiles(fileList, ctx){
+    const queue = Array.from(fileList||[]).map(f=>({ file:f, name:f.name, path:f.webkitRelativePath||f.name, origin:'direct' }));
+    const out=[];
+    while(queue.length){
+      const item = queue.shift();
+      const ext = extOf(item.name);
+      if(ext==='zip'){
+        ctx.diag.push(`[ZIP] Unpacking ${item.path}`);
+        try{
+          const zip = await JSZip.loadAsync(await item.file.arrayBuffer());
+          const entries = Object.values(zip.files||{});
+          for(const entry of entries){
+            if(entry.dir) continue;
+            const data = await entry.async('uint8array');
+            const blob = new Blob([data], {type: guessMime(entry.name)});
+            let derived;
+            try{ derived = new File([blob], entry.name.split('/').pop(), {type: blob.type||guessMime(entry.name)}); }
+            catch{ derived = new File([blob], entry.name.split('/').pop()); }
+            queue.push({ file: derived, name: derived.name, path: entry.name, origin: `zip:${item.path}` });
+          }
+        }catch(err){
+          ctx.errors.push(`Zip error ${item.path}: ${err.message}`);
+          ctx.diag.push(`[WARN] zip error on ${item.path}: ${err.message}`);
+        }
+        continue;
+      }
+      out.push({ file:item.file, name:item.name, path:item.path, ext, origin:item.origin });
+    }
+    return out;
+  }
+  async function parseDelimitedFile(file, delimiter){
+    const text = await file.text();
+    const config = { header:true, skipEmptyLines:'greedy' };
+    if(delimiter) config.delimiter = delimiter;
+    const result = Papa.parse(text, config);
+    const rows = Array.isArray(result.data)? result.data.filter(r=> r && Object.values(r).some(v=> String(v??'').trim()!=='')) : [];
+    return { rows, meta: result.meta||{} };
+  }
+  async function parseExcelFile(file){
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const wb = XLSX.read(buf, {type:'array'});
+    const sheets=[];
+    for(const sheetName of wb.SheetNames||[]){
+      const sheet = wb.Sheets[sheetName];
+      if(!sheet) continue;
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval:'', raw:false });
+      if(rows && rows.length) sheets.push({ name:sheetName, rows });
+    }
+    return sheets;
+  }
+  async function parseHtmlTables(file){
+    const text = await file.text();
+    const dom = new DOMParser().parseFromString(text,'text/html');
+    const tables = Array.from(dom.querySelectorAll('table'));
+    const out=[];
+    tables.forEach((table, index)=>{ /*
+      const name = table.getAttribute('id') || table.getAttribute('data-name') || 	able_;
+      */ const tableName = table.getAttribute('id') || table.getAttribute('data-name') || ('table_'+index);
+      const headerCells = Array.from(table.querySelectorAll('thead tr th'));
+      let headers = headerCells.map(cell=> cell.textContent.trim()).filter(Boolean);
+      const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+      const allRows = bodyRows.length ? bodyRows : Array.from(table.querySelectorAll('tr'));
+      let startIndex = 0;
+      if(!headers.length && allRows.length){
+        headers = Array.from(allRows[0].children).map((cell,i)=> cell.textContent.trim() || ('col_'+(i+1)));
+        if(!bodyRows.length && !headerCells.length) startIndex = 1;
+      }
+      const rows=[];
+      allRows.forEach((tr, rowIndex)=>{
+        if(rowIndex < startIndex) return;
+        const cells = Array.from(tr.children);
+        if(!headers.length){ headers = cells.map((_,i)=> 'col_'+(i+1)); }
+        const row={};
+        headers.forEach((header,i)=>{ const key = header || ('col_'+(i+1)); row[key] = (cells[i]?.textContent || '').trim(); });
+        if(Object.values(row).some(v=> v)) rows.push(row);
+      });
+      if(headers.length && rows.length){ out.push({ name: tableName, rows }); }
+    });
+    return out;
+  }
+  function parseLooseText(text){
+    const cleaned = String(text||'').trim();
+    if(!cleaned) return [];
+    const firstPass = Papa.parse(cleaned, { header:true, skipEmptyLines:'greedy', delimiter:'' });
+    let rows = Array.isArray(firstPass.data)? firstPass.data.filter(r=> r && Object.values(r).some(v=> String(v??'').trim()!=='')) : [];
+    if(rows.length){
+      const sampleKeys = Object.keys(rows[0]).filter(k=> k && k!=='__parsed_extra');
+      if(sampleKeys.length>1){
+        return rows.map(row=>{
+          const out={};
+          for(const [key,val] of Object.entries(row)){
+            if(key==='__parsed_extra') continue;
+            out[key] = val;
+          }
+          return out;
+        });
+      }
+    }
+    const kvRows=[];
+    let current={};
+    const pushCurrent=()=>{ if(Object.keys(current).length){ kvRows.push(current); current={}; } };
+    cleaned.split(/\r?\n/).forEach(line=>{
+      const trimmed=line.trim();
+      if(!trimmed){ pushCurrent(); return; }
+      const match = trimmed.match(/^([^:]+):\s*(.+)$/);
+      if(match){ current[match[1].trim()] = match[2].trim(); }
+    });
+    pushCurrent();
+    return kvRows;
+  }
+  function takeArrayCandidates(ctx, info, rows){
+    const candidates = analyzeTabular(rows);
+    for(const cand of candidates){
+      ingestCandidate(ctx, cand.kind, cand, info.path);
+    }
+  }
+  function handleJsonStructure(ctx, info, obj){
+    if(!obj) return false;
+    if(isLikelyGeoJSON(obj)){
+      ctx.pendingGeom.push({ kind:'geojson', info, payload:obj });
+      ctx.diag.push(`[GEOM] GeoJSON queued from ${info.path}`);
+      return true;
+    }
+    let matched=false;
+    if(obj.councils){ try{ const normed = normCouncil(obj.councils); ingestCandidate(ctx,'council',{kind:'council',norm:normed,rows:normed.councils?.length||0,score:(normed.councils?.length||0)*3+50,detail:'direct JSON payload'}, info.path); matched=true; }catch(err){ ctx.diag.push(`[WARN] council json rejected (${err.message})`); } }
+    if(obj.agency){ try{ const normed = normAgency(obj.agency); ingestCandidate(ctx,'agency',{kind:'agency',norm:normed,rows:normed.agencies?.length||0,score:(normed.agencies?.length||0)*2+40,detail:'direct JSON payload'}, info.path); matched=true; }catch(err){ ctx.diag.push(`[WARN] agency json rejected (${err.message})`); } }
+    if(obj.backlog){ try{ const normed = normBacklog(obj.backlog); ingestCandidate(ctx,'backlog',{kind:'backlog',norm:normed,rows:normed.councils?.length||0,score:(normed.councils?.length||0)*1.5+35,detail:'direct JSON payload'}, info.path); matched=true; }catch(err){ ctx.diag.push(`[WARN] backlog json rejected (${err.message})`); } }
+    if(obj.fast){ try{ const normed = normFast(obj.fast); ingestCandidate(ctx,'fast',{kind:'fast',norm:normed,rows:2,score:60,detail:'direct JSON payload'}, info.path); matched=true; }catch(err){ ctx.diag.push(`[WARN] fast json rejected (${err.message})`); } }
+    if(matched) return true;
+    const arrays = flattenJsonArrays(obj);
+    if(arrays.length){
+      for(const arr of arrays){ takeArrayCandidates(ctx, info, arr); matched = true; }
+      return matched;
+    }
+    return false;
+  }
+  async function ingestSmart(files, opts={}){
+    if(!files || !files.length){ notify('warn','No files selected for ingest.'); return; }
+    if(!window.JSZip || !window.Papa || !window.XLSX){ notify('danger','Parsing libraries missing. Reload recommended.'); return; }
+    const ctx = {
+      diag:[],
+      errors:[],
+      successes:[],
+      pendingGeom:[],
+      best:{
+        council:{score:-Infinity,detail:'',rows:0,source:null},
+        agency:{score:-Infinity,detail:'',rows:0,source:null},
+        backlog:{score:-Infinity,detail:'',rows:0,source:null},
+        fast:{score:-Infinity,detail:'',rows:0,source:null}
+      },
+      updated:new Set()
+    };
+    ctx.diag.push(`[INFO] ingest start (${files.length} file(s))`);
+    const expanded = await flattenIngestFiles(files, ctx);
+    ctx.diag.push(`Ã¯Â¿Â½ ${expanded.length} analyzable file(s)`);
+    for(const info of expanded){
+      ctx.diag.push(`Ã¯Â¿Â½ ${info.path}`);
+      try{
+        if(info.ext==='json' || info.ext==='geojson'){
+          const txt = await info.file.text();
+          const parsed = tryParse(txt);
+          if(!parsed){ ctx.diag.push('[WARN] invalid JSON'); continue; }
+          if(handleJsonStructure(ctx, info, parsed)) continue;
+          if(Array.isArray(parsed)) { takeArrayCandidates(ctx, info, parsed); continue; }
+        } else if(info.ext==='csv' || info.ext==='tsv'){ const parsed = await parseDelimitedFile(info.file, info.ext==='tsv'? '\t':undefined); takeArrayCandidates(ctx, info, parsed.rows); continue; }
+        else if(info.ext==='xlsx' || info.ext==='xls'){ const sheets = await parseExcelFile(info.file); if(!sheets.length){ ctx.diag.push('[WARN] empty workbook'); continue; } for(const sheet of sheets){ ctx.diag.push(`  ? sheet ${sheet.name}`); takeArrayCandidates(ctx, {path:`${info.path}:${sheet.name}`}, sheet.rows); } continue; }
+        else if(info.ext==='kml' || info.ext==='kmz'){ ctx.pendingGeom.push({ kind: info.ext, info }); ctx.diag.push('[GEOM] KML/KMZ queued for geo ingest'); continue; }
+        else if(['shp','dbf','shx','prj','cpg'].includes(info.ext)){ ctx.pendingGeom.push({ kind:'shapefile', info }); continue; }
+        else if(info.ext==='txt'){ const txt = await info.file.text(); const parsed = tryParse(txt); if(parsed && typeof parsed==='object'){ if(handleJsonStructure(ctx, info, parsed)) continue; if(Array.isArray(parsed)) { takeArrayCandidates(ctx, info, parsed); continue; } }
+        }
+      }catch(err){
+        ctx.diag.push(`  ? ingest error: ${err.message}`);
+        ctx.errors.push(`${info.path}: ${err.message}`);
+      }
+    }
+    // Ingest any queued geometry types (KML/KMZ/Shapefile)
+    await ingestGeometry(ctx);
+    // Summarize ingest
+    const updatedKinds = Array.from(ctx.updated);
+    const summaryParts=[];
+    if(updatedKinds.length) summaryParts.push('updated: '+updatedKinds.join(', '));
+    if(ctx.pendingGeom.length) summaryParts.push(ctx.pendingGeom.length+' geometry file(s) queued');
+    if(ctx.errors.length) summaryParts.push(ctx.errors.length+' error(s)');
+    $('#ingestSummary').textContent = summaryParts.length ? summaryParts.join(' Ã‚Â· ') : 'No recognizable datasets found';
+    $('#ingestDiagnostics').textContent = ctx.diag.join('\\n');
+    refreshAges();
+    notify('ok','Ingest complete.');
+  }
+  async function ingestGeometry(ctx){
+    try{
+      const polySets = [];
+      const diag = ctx.diag;
+      const pushGeoJSON = (gj, label)=>{
+        try{
+          if(!gj) return;
+          let fc = gj;
+          if(gj.type==='Feature') fc = {type:'FeatureCollection', features:[gj]};
+          if(fc.type!=='FeatureCollection' || !Array.isArray(fc.features)) return;
+          const polys = flattenFeatures(fc);
+          if(polys && polys.length){ polySets.push({ label, polys }); diag.push(`[GEOM] ${label}: ${polys.length} polygon set(s)`); }
+        }catch(err){ diag.push(`[WARN] geom flatten failed (${label}): ${err.message}`); }
+      };
+      // Group shapefile parts by origin or basename
+      const shpGroups = new Map();
+      for(const item of ctx.pendingGeom){
+        if(item.kind==='kml'){
+          const text = await item.info.file.text();
+          const dom = new DOMParser().parseFromString(text,'text/xml');
+          const gj = (window.toGeoJSON && window.toGeoJSON.kml)? window.toGeoJSON.kml(dom) : null;
+          if(!gj){ diag.push('[WARN] toGeoJSON.kml not available'); continue; }
+          pushGeoJSON(gj, item.info.path);
+        } else if(item.kind==='kmz'){
+          try{
+            if(!window.JSZip){ diag.push('[WARN] JSZip missing for KMZ'); continue; }
+            const zip = await JSZip.loadAsync(await item.info.file.arrayBuffer());
+            const entries = Object.values(zip.files||{});
+            const kmlEntry = entries.find(e=> !e.dir && e.name.toLowerCase().endsWith('.kml'));
+            if(!kmlEntry){ diag.push(`[WARN] no .kml found inside KMZ ${item.info.path}`); continue; }
+            const text = await kmlEntry.async('text');
+            const dom = new DOMParser().parseFromString(text,'text/xml');
+            const gj = (window.toGeoJSON && window.toGeoJSON.kml)? window.toGeoJSON.kml(dom) : null;
+            if(!gj){ diag.push('[WARN] toGeoJSON.kml not available for KMZ'); continue; }
+            pushGeoJSON(gj, `${item.info.path}::${kmlEntry.name}`);
+          }catch(err){ diag.push(`[WARN] KMZ read failed ${item.info.path}: ${err.message}`); }
+        } else if(item.kind==='shapefile'){
+          const origin = String(item.info.origin||'').startsWith('zip:')? String(item.info.origin) : null;
+          let key;
+          if(origin){ key = origin; }
+          else {
+            const p = String(item.info.path||item.info.name||'');
+            key = p.replace(/\.[^\.\/]+$/,'');
+          }
+          if(!shpGroups.has(key)) shpGroups.set(key, []);
+          shpGroups.get(key).push(item.info);
+        }
+      }
+      // Process shapefile groups
+      for(const [key, files] of shpGroups.entries()){
+        try{
+          if(!(window.shp && typeof window.shp==='function')){ diag.push('[WARN] shp parser not available'); continue; }
+          if(!window.JSZip){ diag.push('[WARN] JSZip missing for Shapefile'); continue; }
+          const zipper = new JSZip();
+          for(const f of files){
+            const data = new Uint8Array(await f.file.arrayBuffer());
+            const name = f.name || f.path || 'part.bin';
+            zipper.file(name.split('/').pop(), data);
+          }
+          const zipped = await zipper.generateAsync({type:'arraybuffer'});
+          const gj = await window.shp(zipped);
+          pushGeoJSON(gj, `shp:${key}`);
+        }catch(err){ diag.push(`[WARN] shapefile group failed (${key}): ${err.message}`); }
+      }
+
+      if(!polySets.length){ diag.push('[GEOM] no polygon sets derived'); return; }
+
+      // Choose parcel = largest area set; others = overlays
+      const areas = polySets.map(s=> s.polys.reduce((a,p)=> a + areaOfPolyMeters(p), 0));
+      let maxIdx = 0; for(let i=1;i<areas.length;i++){ if(areas[i] > areas[maxIdx]) maxIdx = i; }
+      const parcelPolys = polySets[maxIdx].polys;
+      const overlayPolys = polySets.filter((_,i)=> i!==maxIdx).map(s=> s.polys);
+      parcelGeom = parcelPolys;
+      overlayGeoms = overlayPolys;
+      store.put(LSK.parcel, parcelGeom);
+      store.put(LSK.overlays, overlayGeoms);
+      setViewFromPolys();
+      redraw();
+      const parcelArea = parcelPolys.reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+      const overlayArea = overlayPolys.flat().reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+      $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
+      $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
+      $('#overlayStatus').textContent = `Parcel ${Math.round(parcelArea).toLocaleString('en-AU')} mÃ‚Â² Ã‚Â· Overlays ${Math.round(overlayArea).toLocaleString('en-AU')} mÃ‚Â²`;
+      ctx.geomSummary = { parcel: parcelArea, overlays: overlayArea };
+      diag.push('[GEOM] geometry applied to canvas and store');
+    }catch(err){
+      ctx.diag.push('[ERROR] ingestGeometry: '+err.message);
+      notify('danger','Geometry ingest error: '+err.message);
+    }
+  }
+  async function runUpdater(manifest){
+    log('Update start', new Date().toLocaleString());
+    const out = { ok:[], fail:[] };
+    for(const src of manifest.sources||[]){
+      try{ if(src.disabled){ log('skip', src.key, '(disabled)'); continue; }
+        if(!src.url){ log('skip', src.key, '(no url)'); continue; }
+        log('pull', src.key, 'Ã¢â€ â€™', src.url);
+        const raw = await fetchJSON(src.url);
+        let norm=null; if(src.key==='council') norm = normCouncil(raw); else if(src.key==='agency') norm = normAgency(raw); else if(src.key==='backlog') norm = normBacklog(raw); else if(src.key==='fast') norm = normFast(raw); else { log('warn unknown key', src.key); continue; }
+        const checksum = crc32(JSON.stringify(norm)).toString(16); norm.checksum = checksum;
+        store.put(LSK[src.key], norm);
+        out.ok.push(src.key); log('ok', src.key, '(crc32='+checksum+')');
+      }catch(e){ out.fail.push({key:src.key, err:String(e.message||e)}); log('FAIL', src.key, '-', e.message||e); }
+    }
+    refreshAges(); log('Update end'); return out;
+  }
+  const DEFAULT_MANIFEST = { sources:[
+    {key:'council', url:'', disabled:true},
+    {key:'agency',  url:'', disabled:true},
+    {key:'backlog', url:'', disabled:true},
+    {key:'fast',    url:'', disabled:true}
+  ]};
+  function activeManifest(){ return store.get(LSK.manifest) || DEFAULT_MANIFEST; }
+  $('#runUpdate').addEventListener('click', async ()=>{ try{ await runUpdater(activeManifest()); notify('ok','Updater completed.'); stampInsightUpdate(); }catch(e){ notify('danger','Updater error: '+e.message); } });
+  $('#manifestInput').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const m = tryParse(await f.text()); if(!m||!Array.isArray(m.sources)) throw new Error('Bad manifest'); store.put(LSK.manifest, m); log('manifest loaded: '+f.name); notify('ok','Manifest loaded.'); }catch(err){ notify('danger','Manifest load failed: '+err.message); } });
+  $('#packInput').addEventListener('change', async e=>{
+    const f=e.target.files?.[0];
+    if(!f) return;
+    try{
+      const pack = tryParse(await f.text());
+      if(!pack||typeof pack!=='object') throw new Error('Invalid pack JSON');
+      // Optional checksum validation if present
+      const checks = pack.checksums || {};
+      const warn = [];
+      if(pack.council){ const c = normCouncil(pack.council); const sum = crc32(JSON.stringify(c)).toString(16); if(checks.council && checks.council!==sum) warn.push('council'); store.put(LSK.council, c); }
+      if(pack.agency){  const a = normAgency(pack.agency); const sum = crc32(JSON.stringify(a)).toString(16); if(checks.agency && checks.agency!==sum) warn.push('agency'); store.put(LSK.agency, a); }
+      if(pack.backlog){ const b = normBacklog(pack.backlog); const sum = crc32(JSON.stringify(b)).toString(16); if(checks.backlog && checks.backlog!==sum) warn.push('backlog'); store.put(LSK.backlog, b); }
+      if(pack.fast){    const f = normFast(pack.fast); const sum = crc32(JSON.stringify(f)).toString(16); if(checks.fast && checks.fast!==sum) warn.push('fast'); store.put(LSK.fast, f); }
+      refreshAges();
+      if(warn.length){ log('pack import ok with checksum warnings: '+warn.join(',')); notify('warn','Pack imported, checksum mismatch for: '+warn.join(', ')); }
+      else { log('pack import ok'); notify('ok','Data pack imported.'); }
+      stampInsightUpdate();
+    }catch(err){
+      notify('danger','Pack import failed: '+err.message);
+    }
+  });
+  $('#dirMulti').addEventListener('change', async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    await ingestSmart(files, {source:'folder'});
+    e.target.value='';
+  });
+  $('#ingestAny').addEventListener('change', async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    await ingestSmart(files, {source:'manual'});
+    e.target.value='';
+  });
+  function downloadText(filename, text){ const blob = new Blob([text], {type:'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0); }
+  $('#exportPack').addEventListener('click', ()=>{
+    const pack = { exportedAt: nowISO(), council: store.get(LSK.council), agency: store.get(LSK.agency), backlog: store.get(LSK.backlog), fast: store.get(LSK.fast) };
+    const checks = {};
+    if(pack.council) checks.council = crc32(JSON.stringify(pack.council)).toString(16);
+    if(pack.agency)  checks.agency  = crc32(JSON.stringify(pack.agency)).toString(16);
+    if(pack.backlog) checks.backlog = crc32(JSON.stringify(pack.backlog)).toString(16);
+    if(pack.fast)    checks.fast    = crc32(JSON.stringify(pack.fast)).toString(16);
+    pack.checksums = checks;
+    downloadText(`pack_${nowISO().slice(0,10)}.json`, JSON.stringify(pack, null, 2));
+    log('exported pack with checksums: '+JSON.stringify(checks));
+    notify('ok','Data pack exported with checksums.');
+  });
+  $('#saveLog').addEventListener('click', ()=>{ const txt = $('#upLog').textContent || ''; if(!txt.trim()) return notify('warn','Log is empty.'); downloadText(`updater_${nowISO().slice(0,10)}.txt`, txt); notify('ok','Log exported.'); });
+  /************ OVERLAY ENGINE (WORKER-BASED RASTER) ************/
+  const canvas = $('#mapCanvas'); const ctx = canvas.getContext('2d');
+  let parcelGeom=null, overlayGeoms=[];
+  function readJSONFile(f){ return f.text().then(txt=>{ const j = tryParse(txt); if(!j) throw new Error('Invalid JSON in '+f.name); return j; }); }
+  function flattenFeatures(gj){
+    const polys=[];
+    function pushPoly(coords){ polys.push(coords); }
+    function fromGeom(geom){
+      if(!geom) return;
+      if(geom.type==='Polygon'){ pushPoly(geom.coordinates); }
+      else if(geom.type==='MultiPolygon'){ for(const p of geom.coordinates) pushPoly(p); }
+      else if(geom.type==='GeometryCollection'){ for(const g of geom.geometries||[]) fromGeom(g); }
+    }
+    if(gj.type==='Feature'){ fromGeom(gj.geometry); }
+    else if(gj.type==='FeatureCollection'){ for(const f of gj.features||[]) fromGeom(f.geometry); }
+    else if(gj.type==='Polygon' || gj.type==='MultiPolygon' || gj.type==='GeometryCollection'){ fromGeom(gj); }
+    return polys;
+  }
+  function lonLatToMerc([lon,lat]){ const R=6378137; const x = R * (lon*Math.PI/180); const y = R * Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2)); return [x,y]; }
+  function areaOfRingMeters(ring){ let a=0; for(let i=0, j=ring.length-1; i<ring.length; j=i++){ const [x1,y1]=ring[j], [x2,y2]=ring[i]; a += (x1*y2 - x2*y1); } return Math.abs(a)/2.0; }
+  function areaOfPolyMeters(poly){ const proj = poly.map(r=> r.map(lonLatToMerc)); let area = areaOfRingMeters(proj[0]); for(let i=1;i<proj.length;i++) area -= areaOfRingMeters(proj[i]); return area; }
+  function bboxOfPolys(polys){ let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity; for(const poly of polys){ for(const ring of poly){ for(const [lon,lat] of ring){ const [x,y]=lonLatToMerc([lon,lat]); if(x<minx)minx=x; if(y<miny)miny=y; if(x>maxx)maxx=x; if(y>maxy)maxy=y; } } } return {minx,miny,maxx,maxy}; }
+  function drawPolys(polys, color, fill=false){ ctx.save(); ctx.lineWidth=1; ctx.strokeStyle=color; ctx.fillStyle=color+'33'; for(const poly of polys){ ctx.beginPath(); for(let r=0;r<poly.length;r++){ const ring = poly[r]; for(let i=0;i<ring.length;i++){ const [lon,lat] = ring[i]; const [x,y] = lonLatToMerc([lon,lat]); const [cx,cy] = toCanvas(x,y); if(i===0) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy); } ctx.closePath(); } fill? ctx.fill('evenodd') : ctx.stroke(); } ctx.restore(); }
+  let view=null;
+  function setViewFromPolys(){ const polys=[...(parcelGeom||[]), ...overlayGeoms.flat()]; if(!polys.length){ view=null; ctx.clearRect(0,0,canvas.width,canvas.height); return; } const bb=bboxOfPolys(polys); const pad=0.05; const width=bb.maxx-bb.minx, height=bb.maxy-bb.miny; view={ minx:bb.minx-width*pad, maxx:bb.maxx+width*pad, miny:bb.miny-height*pad, maxy:bb.maxy+height*pad }; }
+  function toCanvas(x,y){ if(!view){ return [0,0]; } const w=view.maxx-view.minx, h=view.maxy-view.miny; const cx = (x-view.minx)/w * canvas.width; const cy = canvas.height - (y-view.miny)/h * canvas.height; return [cx,cy]; }
+  function redraw(){ ctx.clearRect(0,0,canvas.width,canvas.height); if(!view) return; ctx.save(); ctx.strokeStyle='#1a2432'; ctx.lineWidth=1; for(let i=0;i<canvas.width;i+=64){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); } for(let j=0;j<canvas.height;j+=64){ ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); } ctx.restore(); if(overlayGeoms.length) drawPolys(overlayGeoms.flat(), '#ff5a5a', true); if(parcelGeom) drawPolys(parcelGeom, '#2ecc71', false); }
+  function rehydrateGeometryFromStore(){
+    try{
+      const p = store.get(LSK.parcel);
+      const o = store.get(LSK.overlays);
+      if((p && p.length) || (o && o.length)){
+        parcelGeom = Array.isArray(p)? p : null;
+        overlayGeoms = Array.isArray(o)? o : [];
+        setViewFromPolys();
+        redraw();
+        const parcelArea = (parcelGeom||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+        const overlayArea = (overlayGeoms.flat()||[]).reduce((a,p)=> a+areaOfPolyMeters(p), 0);
+        if(parcelArea){ $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(parcelArea); }
+        if(overlayArea){ $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU'); }
+        $('#overlayStatus').textContent = 'Recovered last geometry from session.';
+        notify('ok','Recovered geometry from last session.');
+      }
+    }catch(e){ /* ignore */ }
+  }
+  $('#parcelFile').addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(!f) return; try{ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) throw new Error('No polygons found'); parcelGeom = polys; store.put(LSK.parcel, polys); setViewFromPolys(); redraw(); const area = polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); $('#parcelAreaVal').textContent = Math.round(area).toLocaleString('en-AU'); $('#parcelArea').value = Math.round(area); #"+$m.Groups[1].Value+".textContent = 'Parcel loaded: ' + f.name + ' - area ' + Math.round(area) + ' mÂ²'; notify('ok','Parcel geometry loaded.'); stampInsightUpdate(); }catch(err){ notify('danger','Parcel load failed: '+err.message); } });
+  $('#overlayFiles').addEventListener('change', async e=>{ const files = Array.from(e.target.files||[]); let total=0; overlayGeoms=[]; try{ for(const f of files){ const gj = await readJSONFile(f); const polys = flattenFeatures(gj); if(!polys?.length) continue; overlayGeoms.push(polys); total += polys.reduce((a,p)=> a+areaOfPolyMeters(p), 0); } store.put(LSK.overlays, overlayGeoms); setViewFromPolys(); redraw(); $('#overlayAreaVal').textContent = Math.round(total).toLocaleString('en-AU'); $('#overlayStatus').textContent = 'Loaded '+files.length+' overlay file(s)'; notify('ok','Overlay set updated.'); stampInsightUpdate(); }catch(err){ notify('danger','Overlay load failed: '+err.message); } });
+  $('#clearOverlays').addEventListener('click', ()=>{ overlayGeoms=[]; store.del(LSK.overlays); setViewFromPolys(); redraw(); #"+$m.Groups[1].Value+".textContent='-'; $('#overlayStatus').textContent='Overlays cleared.'; });
+  const workerCode = `
+    self.onmessage = (ev)=>{
+      const {parcel, overlays, resMeters} = ev.data;
+      function lonLatToMerc(lon,lat){ const R=6378137; const x = R * (lon*Math.PI/180); const y = R * Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2)); return [x,y]; }
+      function bbox(polys){ let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity; for(const poly of polys){ for(const ring of poly){ for(const [lon,lat] of ring){ const [x,y]=lonLatToMerc(lon,lat); if(x<minx)minx=x; if(y<miny)miny=y; if(x>maxx)maxx=x; if(y>maxy)maxy=y; } } } return {minx,miny,maxx,maxy}; }
+      function areaOfRingMeters(ring){ let a=0; for(let i=0, j=ring.length-1; i<ring.length; j=i++){ const [x1,y1]=ring[j], [x2,y2]=ring[i]; a += (x1*y2 - x2*y1); } return Math.abs(a)/2.0; }
+      function projectPoly(poly){ return poly.map(r=> r.map(([lon,lat])=> lonLatToMerc(lon,lat))); }
+      function areaOfPolyMeters(polyLL){ const proj = projectPoly(polyLL); let area = areaOfRingMeters(proj[0]); for(let i=1;i<proj.length;i++) area -= areaOfRingMeters(proj[i]); return area; }
+      function pointInRing(px,py,ring){ let inside = false; for(let i=0, j=ring.length-1; i<ring.length; j=i++){ const [xi,yi] = ring[i], [xj,yj] = ring[j]; const intersect = ((yi>py)!=(yj>py)) && (px < (xj - xi) * (py - yi) / (yj - yi + 1e-20) + xi); if(intersect) inside = !inside; } return inside; }
+      function pointInPoly(px,py,poly){ const outer = poly[0]; if(!pointInRing(px,py,outer)) return false; for(let k=1;k<poly.length;k++){ if(pointInRing(px,py,poly[k])) return false; } return true; }
+      const projParcel = parcel.map(r=> r.map(([lon,lat])=> lonLatToMerc(lon,lat)));
+      const projOverlays = overlays.map(poly=> poly.map(r=> r.map(([lon,lat])=> lonLatToMerc(lon,lat))));
+      const bb = bbox([parcel, ...overlays]);
+      const cell = resMeters;
+      const width = Math.max(1, Math.ceil((bb.maxx-bb.minx)/cell));
+      const height= Math.max(1, Math.ceil((bb.maxy-bb.miny)/cell));
+      let parcelCount=0, overlayCount=0, buildableCount=0;
+      const cx0 = bb.minx + cell/2, cy0 = bb.miny + cell/2;
+      for(let j=0;j<height;j++){
+        const y = cy0 + j*cell;
+        for(let i=0;i<width;i++){
+          const x = cx0 + i*cell;
+          if(!pointInPoly(x,y, projParcel)) continue;
+          parcelCount++;
+          let covered=false;
+          for(const poly of projOverlays){ if(pointInPoly(x,y, poly)){ covered=true; break; } }
+          if(covered){ overlayCount++; } else { buildableCount++; }
+        }
+        if(j%64===0) postMessage({type:'progress', j, height});
+      }
+      const cellArea = cell*cell;
+      const out = { cellMeters: cell, grid: {width, height}, parcelArea: parcelCount * cellArea, overlayArea: overlayCount * cellArea, buildableArea: buildableCount * cellArea };
+      postMessage({type:'done', out});
+    };
+  `;
+  let worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'})));
+  function attachWorkerHandlers(){
+  worker.onmessage = (ev)=>{
+  if(ev.data.type==='progress'){
+    #"+$m.Groups[1].Value+".textContent = 'Computing ' + Math.round(100*ev.data.j/ev.data.height) + '%';
+  } else if(ev.data.type==='done'){
+    const {parcelArea, overlayArea, buildableArea, cellMeters} = ev.data.out;
+    #"+$m.Groups[1].Value+".textContent = Math.round(parcelArea).toLocaleString('en-AU');
+    #"+$m.Groups[1].Value+".textContent = Math.round(overlayArea).toLocaleString('en-AU');
+    #"+$m.Groups[1].Value+".textContent = Math.round(buildableArea).toLocaleString('en-AU');
+    #"+$m.Groups[1].Value+".value = Math.round(buildableArea);
+    const status = 'OK - cell ' + cellMeters + ' m; parcel=' + Math.round(parcelArea) + ' m²; overlay=' + Math.round(overlayArea) + ' m²; buildable=' + Math.round(buildableArea) + ' m²';
+    #"+$m.Groups[1].Value+".textContent = status;
+    store.put(LSK.buildable, {ts: nowISO(), method:'grid', cellMeters, parcelArea, overlayArea, buildableArea});
+    #"+$m.Groups[1].Value+".textContent = 'Run buildable engine for net developable area.';
+    #"+$m.Groups[1].Value+".textContent = 'Select a resolution and press Compute Buildable.';
+    stampInsightUpdate();
+  }
+};
+  worker.onerror = (e)=>{ $('#overlayStatus').textContent = 'Worker error: '+(e.message||'unknown'); notify('danger','Buildable worker error: '+(e.message||'unknown')); };
+  }
+  attachWorkerHandlers();
+  $('#calcBuildable').addEventListener('click', ()=>{
+    if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel GeoJSON first.'); return; }
+    const resMeters = parseFloat($('#resSelect').value);
+    const parcel = parcelGeom[0];
+    const overlaysFlat = overlayGeoms.flat();
+    if(!parcel){ notify('danger','Parcel polygon missing.'); return; }
+    $('#overlayStatus').textContent = 'ComputingÃ¢â‚¬Â¦';
+    worker.postMessage({parcel, overlays: overlaysFlat, resMeters});
+  });
+  $('#cancelBuildable').addEventListener('click', ()=>{ try{ worker.terminate(); }catch{}; worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type:'application/javascript'}))); attachWorkerHandlers(); $('#overlayStatus').textContent = 'Computation cancelled.'; notify('warn','Buildable compute cancelled.'); });
+  // ---- Vector Exact Buildable (martinez + Mercator) ----
+  function toXYPolys(polysLL){
+    return polysLL.map(poly=> poly.map(ring=> ring.map(([lon,lat])=> lonLatToMerc([lon,lat])) ));
+  }
+  function areaOfRingXY(ring){ let a=0; for(let i=0,j=ring.length-1;i<ring.length;j=i++) { const [x1,y1]=ring[j], [x2,y2]=ring[i]; a += (x1*y2 - x2*y1); } return Math.abs(a)/2.0; }
+  function areaOfPolyXY(poly){ let a=areaOfRingXY(poly[0]); for(let i=1;i<poly.length;i++) a-=areaOfRingXY(poly[i]); return a; }
+  function areaOfMultiPolyXY(mpoly){ let s=0; for(const poly of mpoly){ s+=areaOfPolyXY(poly); } return s; }
+  function computeExactBuildable(){
+    if(!window.martinez){ notify('danger','Exact engine missing: martinez not loaded.'); return false; }
+    if(!parcelGeom || !parcelGeom.length){ notify('warn','Load a parcel first.'); return false; }
+    const parcelXY = toXYPolys(parcelGeom); // MultiPolygon
+    const overlaysXY = overlayGeoms.flat().map(poly=> poly.map(ring=> ring.map(([lon,lat])=> lonLatToMerc([lon,lat]))));
+    let unionOver=null;
+    for(const poly of overlaysXY){ unionOver = unionOver? window.martinez.union(unionOver,[poly]) : [poly]; }
+    const parcelArea = areaOfMultiPolyXY(parcelXY);
+    const overlayArea = unionOver? areaOfMultiPolyXY(unionOver) : 0;
+    const diff = unionOver? window.martinez.diff(parcelXY, unionOver) : parcelXY;
+    const buildableArea = diff? areaOfMultiPolyXY(diff) : 0;
+    $('#parcelAreaVal').textContent   = Math.round(parcelArea).toLocaleString('en-AU');
+    $('#overlayAreaVal').textContent  = Math.round(overlayArea).toLocaleString('en-AU');
+    $('#buildableAreaVal').textContent= Math.round(buildableArea).toLocaleString('en-AU');
+    $('#buildableArea').value = Math.round(buildableArea);
+    $('#overlayStatus').textContent = 'OK - exact vector method';
+    store.put(LSK.buildable, {ts: nowISO(), method:'vector', parcelArea, overlayArea, buildableArea});
+    $('#insightBuildable').textContent = Math.round(buildableArea).toLocaleString('en-AU') + ' mÂ² buildable';
+    $('#insightBuildableMeta').textContent = 'Parcel ' + Math.round(parcelArea).toLocaleString('en-AU') + ' mÂ² - exact vector';
+    stampInsightUpdate();
+    return true;
+  }
+  // ---- Evidence Pack (checksum + canonical JSON) ----
+  async function sha256Hex(text){ const data=new TextEncoder().encode(text); const buf=await crypto.subtle.digest('SHA-256', data); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+  function canonicalize(obj){ const sort=v=> (v&&typeof v==='object'&&!Array.isArray(v))? Object.keys(v).sort().reduce((o,k)=>{o[k]=sort(v[k]); return o;},{}): Array.isArray(v)? v.map(sort): v; return JSON.stringify(sort(obj)); }
+  async function exportEvidence(){
+    const timing = store.get(LSK.lastTiming)||null;
+    const feas = store.get(LSK.lastFeas)||null;
+    const build = store.get(LSK.buildable)||null;
+    const datasets = { council: store.get(LSK.council)?.version||null, agency: store.get(LSK.agency)?.lastUpdated||null, backlog: store.get(LSK.backlog)?.lastUpdated||null, fast: store.get(LSK.fast)?.lastUpdated||null };
+    const parcel = store.get(LSK.parcel)||null; const overlays = store.get(LSK.overlays)||null;
+    const inputs = { datasetMeta: datasets, parcelHash: parcel? await sha256Hex(JSON.stringify(parcel)) : null, overlaysHash: overlays? await sha256Hex(JSON.stringify(overlays)) : null, computeMode: ($('#computeMode')?.value)||'grid' };
+    const compute = build? { parcelArea: Math.round(build.parcelArea||0), overlayArea: Math.round(build.overlayArea||0), buildableArea: Math.round(build.buildableArea||0), method: build.method||'grid', cellMeters: build.cellMeters||null } : null;
+    const pack = { exportedAt: nowISO(), method: compute?.method||inputs.computeMode, compute, inputs };
+    const canonical = canonicalize(pack); const digest = await sha256Hex(canonical); pack.checksum = digest;
+    downloadText('evidence_'+ nowISO().replace(/[:T]/g,'-').slice(0,16)+'.json', JSON.stringify(pack, null, 2));
+    notify('ok','Evidence pack exported.');
+    try{ window.open('evidence_verifier.html?hash='+encodeURIComponent(digest),'_blank'); }catch(e){}
+  }
+  $('#exportEvidence').addEventListener('click', ()=>{ exportEvidence(); });
+  // ---- Minimal PRJ support (UTM/MGA hints) ----
+  function projFromPrjText(prj){ const t=String(prj||''); if(!t) return null; if(/WGS[_\s]*84/i.test(t)){ const m=t.match(/UTM\s*Zone\s*(\d+)\s*([NS])/i) || t.match(/MGA\s*Zone\s*(\d+)/i); if(m){ const zone=parseInt(m[1],10); const south=(m[2]||'N').toUpperCase()==='S'; return '+proj=utm +zone='+zone+' +datum=WGS84 +units=m +no_defs'+(south?' +south':''); } return 'WGS84'; } return null; }
+  function reprojectGeoJSON(gj, fromDef){ if(!window.proj4||!fromDef||fromDef==='WGS84') return gj; const to='WGS84'; function tx(pt){ const r=proj4(fromDef,to,pt); return [r[0],r[1]]; } function walk(c){ if(typeof c[0]==='number'){ return tx(c);} return c.map(walk);} const clone=JSON.parse(JSON.stringify(gj)); if(clone.type==='FeatureCollection'){ for(const f of clone.features||[]){ if(f.geometry&&f.geometry.coordinates){ f.geometry.coordinates=walk(f.geometry.coordinates);} } } else if(clone.type==='Feature'){ if(clone.geometry&&clone.geometry.coordinates){ clone.geometry.coordinates=walk(clone.geometry.coordinates);} } else if(clone.coordinates){ clone.coordinates=walk(clone.coordinates);} return clone; }
+  function loadDemoScenario(){
+    try{
+      store.put(LSK.council, BUILTIN_SAMPLE.council);
+      store.put(LSK.agency, BUILTIN_SAMPLE.agency);
+      store.put(LSK.backlog, BUILTIN_SAMPLE.backlog);
+      store.put(LSK.fast, BUILTIN_SAMPLE.fast);
+      const defaults = BUILTIN_SAMPLE.defaults;
+      for(const [field,val] of Object.entries(defaults)){
+        const el = document.getElementById(field);
+        if(!el) continue;
+        el.value = val;
+        const key = FIELD_KEY_MAP[field];
+        if(key) store.put(key, val);
+      }
+      parcelGeom = flattenFeatures(DEMO_PARCEL);
+      overlayGeoms = [flattenFeatures(DEMO_OVERLAY)];
+      store.put(LSK.parcel, parcelGeom);
+      store.put(LSK.overlays, overlayGeoms);
+      setViewFromPolys();
+      redraw();
+      const parcelArea = parcelGeom.reduce((sum,p)=> sum+areaOfPolyMeters(p),0);
+      const overlayArea = overlayGeoms.flat().reduce((sum,p)=> sum+areaOfPolyMeters(p),0);
+      $('#parcelAreaVal').textContent = Math.round(parcelArea).toLocaleString('en-AU');
+      $('#overlayAreaVal').textContent = Math.round(overlayArea).toLocaleString('en-AU');
+      #"+$m.Groups[1].Value+".textContent = '-';
+      store.del(LSK.buildable);
+      #"+$m.Groups[1].Value+".textContent = 'Run buildable engine for net developable area.';
+      #"+$m.Groups[1].Value+".textContent = 'Select a resolution and press Compute Buildable.';
+      $('#parcelArea').value = Math.round(parcelArea);
+      $('#overlayStatus').textContent = 'Demo parcel and overlay ready. Run buildable engine.';
+      refreshAges();
+      runTimingAuto();
+      runFeasAuto();
+      notify('ok','Demo scenario loaded. Compute buildable area to finish.');
+      pushSessionLog('Demo scenario loaded.');
+    }catch(err){
+      notify('danger','Demo load failed: '+err.message);
+    }
+  }
+  /************ TIMING ************/
+  function findCouncilByName(cdata, name){ const m = cdata?.councils?.find(c=> c.name.toLowerCase().trim()=== String(name).toLowerCase().trim()); if(!m) throw new Error('Council not found'); return m; }
+  function backlogPenalty(bdata, name){ const e = bdata?.councils?.find(c=> c.name.toLowerCase().trim()=== String(name).toLowerCase().trim()); if(!e) return 1.0; if(e.pending>1200) return 1.35; if(e.pending>800) return 1.20; if(e.pending>400) return 1.10; return 1.0; }
+  function agencyLagDays(adata){ const vals = (adata?.agencies||[]).map(a=> a.avgReferralDays).filter(Number.isFinite); if(!vals.length) return 0; return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length); }
+  function fastEligible(fdata, value, dw, metro=true){ const th = metro? fdata?.metroThreshold: fdata?.regionalThreshold; if(!th) return false; return (Number(value)||0)>= (th.minValueAUD||Infinity) || (Number(dw)||0)>= (th.minDwellings||Infinity); }
+  function timingPredict({councilName, projectValue, dwellings}){
+    const cdata= store.get(LSK.council); if(!cdata) throw new Error('Load council data');
+    const adata= store.get(LSK.agency); const bdata= store.get(LSK.backlog); const fdata= store.get(LSK.fast);
+    const c = findCouncilByName(cdata, councilName);
+    const baseDays = (c.avgDays?.lodgement||0) + (c.avgDays?.assessment||0);
+    const agency = agencyLagDays(adata); const backlogMult = backlogPenalty(bdata, councilName); const seasonalMult = (c.avgDays.assessment>180)? 1.05 : 1.00;
+    const totalDays = Math.round(baseDays*backlogMult*seasonalMult) + agency;
+    const allAssess = cdata.councils.map(x=> x.avgDays.assessment).sort((a,b)=>a-b); const idx = allAssess.findIndex(v=> v>= c.avgDays.assessment); const riskScore = Math.round(100* idx / Math.max(1, allAssess.length-1));
+    const ft = fastEligible(fdata, projectValue, dwellings, true);
+    return { council:c.name, baseDays, agencyDays:agency, backlogMult, seasonalMult, totalDays, months:+(daysToMonths(totalDays)).toFixed(2), riskScore, fastTrackEligible:ft };
+  }
+  function renderTimingSummary(res, opts={}){
+    $('#timingSummary').textContent = `${res.council}: ${res.totalDays} days (~${res.months} months). Risk ${res.riskScore}/100. ${res.fastTrackEligible? 'FAST-TRACK':'standard pathway'}`;
+    const status=$('#timingStatus');
+    status.textContent = (res.riskScore>=70? 'High delay risk' : res.riskScore>=40? 'Moderate' : 'Low');
+    status.className = 'status ' + (res.riskScore>=70? 'danger' : res.riskScore>=40? 'warn' : 'ok');
+    const prov = {
+      councilDatasetVersion: store.get(LSK.council)?.version||null,
+      councilLastUpdated: store.get(LSK.council)?.lastUpdated||null,
+      agencyLastUpdated: store.get(LSK.agency)?.lastUpdated||null,
+      backlogLastUpdated: store.get(LSK.backlog)?.lastUpdated||null,
+      fastTrackLastUpdated: store.get(LSK.fast)?.lastUpdated||null
+    };
+    $('#timingProv').textContent = JSON.stringify(prov,null,2);
+    store.put(LSK.lastTiming, res);
+    updateInsightsFromStore();
+    if(!opts.silent) stampInsightUpdate();
+  }
+  function runTimingAuto(){
+    const council = $('#councilName').value.trim();
+    if(!store.get(LSK.council)){ $('#insightTiming').textContent = 'Load datasets to begin.'; #"+$m.Groups[1].Value+".textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway'); return; }
+    if(!council) return;
+    try{
+      const res = timingPredict({ councilName: council, projectValue: +$('#projectValue').value||0, dwellings: +$('#projectYield').value||0 });
+      renderTimingSummary(res, {silent:true});
+    }catch(e){
+      const status=$('#timingStatus');
+      status.textContent = e.message;
+      status.className = 'status warn';
+      $('#insightTiming').textContent = 'Awaiting valid timing inputs.';
+      #"+$m.Groups[1].Value+".textContent = 'Risk ' + timing.riskScore + '/100 - ' + (timing.fastTrackEligible? 'FAST-TRACK ELIGIBLE':'Standard pathway');
+    }
+  }
+  const scheduleTiming = debounce(runTimingAuto, 520);
+  $('#runTiming').addEventListener('click', ()=>{ try{ const res = timingPredict({ councilName: $('#councilName').value, projectValue: +$('#projectValue').value||0, dwellings: +$('#projectYield').value||0 }); renderTimingSummary(res); notify('ok','Timing forecast updated.'); stampInsightUpdate(); }catch(e){ notify('danger','Timing error: '+e.message); } });
+  /************ FEASIBILITY ************/
+  function computeFeas(){ const lots = +$('#lots').value||0; const price = +$('#pricePerLot').value||0; const acq = +$('#costAcq').value||0; const infra = +$('#costInfra').value||0; const rate = (+$('#interestRate').value||0)/100; const cont = (+$('#contingency').value||0)/100; const area = +$('#parcelArea').value||0; const buildable = +$('#buildableArea').value||0; if(lots<=0||price<=0) throw new Error('Enter target lots and price per lot'); if(area<=0||buildable<=0) throw new Error('Enter parcel + buildable areas'); const t=store.get(LSK.lastTiming); const months = t? t.months : 6; const revenue = lots*price; const baseCost = acq+infra; const contingency = baseCost*cont; const holding = baseCost*(rate/12)*months; const totalCost = baseCost+contingency+holding; const profit = revenue-totalCost; const beLots = Math.ceil(totalCost/Math.max(1,price)); return {inputs:{lots,price,acq,infra,rate,cont,area,buildable,months}, revenue, baseCost, contingency, holding, totalCost, profit, beLots}; }
+  function renderFeas(r, opts={}){
+    $('#kRev').textContent = fmtAUD(r.revenue);
+    $('#kCost').textContent = fmtAUD(r.totalCost);
+    $('#kProfit').textContent = fmtAUD(r.profit);
+    const L=[
+      `Assumed approval timeline: ${r.inputs.months.toFixed(2)} months`,
+      `Revenue = lots(${r.inputs.lots}) Ãƒâ€” price(${fmtAUD(r.inputs.price)}) = ${fmtAUD(r.revenue)}`,
+      `Base cost = acquisition(${fmtAUD(r.inputs.acq)}) + infrastructure(${fmtAUD(r.inputs.infra)}) = ${fmtAUD(r.baseCost)}`,
+      `Contingency ${Math.round(r.inputs.cont*100)}% = ${fmtAUD(r.contingency)}`,
+      `Holding (${(r.inputs.rate*100).toFixed(2)}% p.a.) Ãƒâ€” ${r.inputs.months.toFixed(2)} mo = ${fmtAUD(r.holding)}`,
+      `Total cost = ${fmtAUD(r.totalCost)}`,
+      `Net profit = ${fmtAUD(r.profit)}`,
+      `Break-even lots: ${r.beLots}`
+    ];
+    $('#feasDetail').textContent=L.join('\n');
+    store.put(LSK.lastFeas, r);
+    updateInsightsFromStore();
+    if(!opts.silent) stampInsightUpdate();
+  }
+  function runFeasAuto(){
+    if(!$('#parcelArea').value || !$('#buildableArea').value){
+      $('#insightFeas').textContent = 'Enter parcel + buildable areas to model economics.';
+      #"+$m.Groups[1].Value+".textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
+      return;
+    }
+    try{
+      const res = computeFeas();
+      renderFeas(res, {silent:true});
+    }catch(e){
+      $('#insightFeas').textContent = 'Awaiting complete feasibility inputs.';
+      #"+$m.Groups[1].Value+".textContent = 'Revenue ' + fmtAUD(feas.revenue) + ' - Cost ' + fmtAUD(feas.totalCost);
+      $('#kRev').textContent = $('#kCost').textContent = $('#kProfit').textContent = 'Ã¢â‚¬â€';
+    }
+  }
+  const scheduleFeas = debounce(runFeasAuto, 520);
+  $('#runFeas').addEventListener('click', ()=>{ try{ renderFeas(computeFeas()); notify('ok','Feasibility updated.'); stampInsightUpdate(); }catch(e){ notify('danger','Feasibility error: '+e.message); } });
+  /************ REPORT ************/
+  function exportPrintable(){ const t=store.get(LSK.lastTiming); const f=store.get(LSK.lastFeas); if(!f) { notify('warn','Run Feasibility first.'); return false; } const now = new Date().toISOString().replace(/T.*/, ''); const css=`body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;line-height:1.35;margin:24px;color:#0b0e12} h1{margin:0 0 6px} h2{margin:18px 0 6px} .k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px} .pill{border:1px solid #ddd;border-radius:12px;padding:12px;background:#f9f9fb} .muted{color:#667} table{border-collapse:collapse;width:100%} td,th{border:1px solid #ddd;padding:8px;text-align:left}`; const prov={ councilDatasetVersion: store.get(LSK.council)?.version||null, councilLastUpdated: store.get(LSK.council)?.lastUpdated||null, agencyLastUpdated: store.get(LSK.agency)?.lastUpdated||null, backlogLastUpdated: store.get(LSK.backlog)?.lastUpdated||null, fastTrackLastUpdated: store.get(LSK.fast)?.lastUpdated||null }; const html=`<!doctype html><html><head><meta charset='utf-8'/><title>BLACKTOP Report</title><style>${css}    .ingest-report{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+    .ingest-report .pill{background:rgba(8,14,26,.92);border:1px solid rgba(92,118,188,.45);min-height:120px}
+    .ingest-report .pill .v{font-size:16px;color:var(--accent)}
+    .ingest-report .mono{background:rgba(4,8,18,.75);border-radius:14px;border:1px solid rgba(74,104,172,.45);padding:12px;margin:6px 0 0;max-height:180px;overflow:auto}</style>  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/papaparse.min.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/shp.min.js"></script>
+
+</head><body>
+      <h1>BLACKTOP Ã¢â‚¬â€ Development Brief</h1>
+      <div class='muted'>Generated ${now}</div>
+      <h2>Summary</h2>
+      <div class='k'>
+        <div class='pill'><b>Revenue</b><div>${fmtAUD(f.revenue)}</div></div>
+        <div class='pill'><b>Total Cost</b><div>${fmtAUD(f.totalCost)}</div></div>
+        <div class='pill'><b>Net Profit</b><div>${fmtAUD(f.profit)}</div></div>
+      </div>
+      <h2>Approval Timing</h2>
+      <div class='pill'>${t? `${t.council}: ${t.totalDays} days (~${t.months} months). Risk ${t.riskScore}/100. ${t.fastTrackEligible? 'FAST-TRACK':''}` : 'No timing run in session.'}</div>
+      <h2>Feasibility Details</h2>
+      <table>
+        <tr><th>Lots</th><td>${f.inputs.lots}</td><th>Price/lot</th><td>${fmtAUD(f.inputs.price)}</td></tr>
+        <tr><th>Parcel Area</th><td>${f.inputs.area} mÃ‚Â²</td><th>Buildable Area</th><td>${f.inputs.buildable} mÃ‚Â²</td></tr>
+        <tr><th>Acquisition</th><td>${fmtAUD(f.inputs.acq)}</td><th>Infra/Const</th><td>${fmtAUD(f.inputs.infra)}</td></tr>
+        <tr><th>Contingency</th><td>${(f.inputs.cont*100).toFixed(1)}%</td><th>Interest p.a.</th><td>${(f.inputs.rate*100).toFixed(2)}%</td></tr>
+        <tr><th>Holding (months)</th><td>${f.inputs.months.toFixed(2)}</td><th>Break-even Lots</th><td>${f.beLots}</td></tr>
+      </table>
+      <h2>Provenance</h2>
+      <pre class='pill'>${JSON.stringify(prov,null,2)}</pre>
+      <div class='muted'>BLACKTOP runs entirely offline. Update JSON inputs to refresh figures. This file is suitable for investor or planner review.</div>
+    </body></html>`;
+    const win = window.open('', '_blank'); if(!win){ notify('warn','Pop-up blocked. Allow pop-ups to view report.'); return false; }
+    win.document.open(); win.document.write(html); win.document.close();
+    notify('ok','Printable report opened.');
+    return true;
+  }
+  bindPersistentFields();
+  refreshAges();
+  rehydrateGeometryFromStore();
+  runTimingAuto();
+  runFeasAuto();
+  (async function startup(){ if(store.get(LSK.policyAllowNet)) { try{ await runUpdater(activeManifest()); notify('ok','Startup refresh complete.'); }catch(e){ log('startup updater failed:', e.message); notify('warn','Startup refresh failed: '+e.message); } } })();
+  $('#exportReport').addEventListener('click', ()=>{ if(exportPrintable()) stampInsightUpdate(); });
+  $('#quickReport').addEventListener('click', ()=>{ if(exportPrintable()) stampInsightUpdate(); });
+  $('#loadDemo').addEventListener('click', loadDemoScenario);
+  // Guided Setup overlay controls
+  function openGuide(){ const el=$('#guideOverlay'); if(el){ el.classList.add('active'); el.setAttribute('aria-hidden','false'); } }
+  function closeGuide(){ const el=$('#guideOverlay'); if(el){ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); } }
+  $('#guidedSetup').addEventListener('click', openGuide);
+  $('#guideClose').addEventListener('click', closeGuide);
+  $('#guidePickData').addEventListener('click', ()=>{ $('#ingestAny')?.click(); notify('ok','Pick your data files (CSV/Excel/JSON).'); });
+  $('#guidePickParcel').addEventListener('click', ()=>{ $('#parcelFile')?.click(); notify('ok','Pick your parcel geometry file.'); });
+  $('#guidePickOverlays').addEventListener('click', ()=>{ $('#overlayFiles')?.click(); notify('ok','Pick one or more overlay files.'); });
+  $('#guideCompute').addEventListener('click', ()=>{ $('#calcBuildable')?.click(); closeGuide(); });
+  $('#guideAnalyze').addEventListener('click', ()=>{ try{ $('#runTiming')?.click(); $('#runFeas')?.click(); closeGuide(); }catch{} });
+  $('#guideReport').addEventListener('click', ()=>{ $('#quickReport')?.click(); closeGuide(); });
+  // Run All orchestration
+  async function runAll(){
+    try{
+      if(!store.get(LSK.council)){ notify('warn','Load your data files first (Guided Setup).'); openGuide(); return; }
+      if(!parcelGeom || !parcelGeom.length){ notify('warn','Pick a parcel file first (Guided Setup).'); openGuide(); return; }
+      $('#resSelect').value = $('#resSelect').value || '1';
+      const parcel = parcelGeom?.[0]; const overlaysFlat = overlayGeoms.flat(); if(!parcel){ notify('danger','Parcel missing'); return; }
+      const done = new Promise((res, rej)=>{
+        const prev = worker.onmessage; worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
+        worker.onerror = (e)=>{ rej(e); };
+      });
+      $('#overlayStatus').textContent = 'ComputingÃ¢â‚¬Â¦'; worker.postMessage({parcel, overlays: overlaysFlat, resMeters: parseFloat($('#resSelect').value)||1});
+      await done;
+      $('#runTiming')?.click();
+      $('#runFeas')?.click();
+      $('#quickReport')?.click();
+      notify('ok','Run All complete.');
+    }catch(e){ notify('danger','Run All error: '+(e.message||e)); }
+  }
+  $('#runAll').addEventListener('click', ()=>{ runAll(); });
+  $('#selfTest').addEventListener('click', async ()=>{
+    try{
+      loadDemoScenario();
+      await new Promise(r=> setTimeout(r, 350));
+      $('#resSelect').value = '1';
+      const parcel = parcelGeom?.[0];
+      const overlaysFlat = overlayGeoms.flat();
+      if(!parcel){ notify('danger','Self-check failed: parcel missing'); return; }
+      $('#overlayStatus').textContent = 'ComputingÃ¢â‚¬Â¦';
+      const done = new Promise((res, rej)=>{
+        const prev = worker.onmessage;
+        worker.onmessage = (ev)=>{ prev?.(ev); if(ev.data?.type==='done') res(true); };
+        worker.onerror = (e)=>{ rej(e); };
+      });
+      worker.postMessage({parcel, overlays: overlaysFlat, resMeters: 1});
+      await done;
+      runTimingAuto();
+      runFeasAuto();
+      notify('ok','Self-check completed.');
+    }catch(e){ notify('danger','Self-check error: '+(e.message||e)); }
+  });
+  /************ HOUSEKEEPING ************/
+  $('#clearLocal').addEventListener('click', async ()=>{ if(confirm('Clear cached datasets, geojsons, and last results?')){ await idbClear(); Object.values(LSK).forEach(store.del); notify('ok','Local cache cleared. ReloadingÃ¢â‚¬Â¦'); location.reload(); } });
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
