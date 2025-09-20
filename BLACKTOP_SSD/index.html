@@ -1083,9 +1083,9 @@
     };
     ctx.diag.push(`[INFO] ingest start (${files.length} file(s))`);
     const expanded = await flattenIngestFiles(files, ctx);
-    ctx.diag.push(`… ${expanded.length} analyzable file(s)`);
+    ctx.diag.push(`ï¿½ ${expanded.length} analyzable file(s)`);
     for(const info of expanded){
-      ctx.diag.push(`• ${info.path}`);
+      ctx.diag.push(`ï¿½ ${info.path}`);
       try{
         if(info.ext==='json' || info.ext==='geojson'){
           const txt = await info.file.text();
@@ -1094,13 +1094,13 @@
           if(handleJsonStructure(ctx, info, parsed)) continue;
           if(Array.isArray(parsed)) { takeArrayCandidates(ctx, info, parsed); continue; }
         } else if(info.ext==='csv' || info.ext==='tsv'){ const parsed = await parseDelimitedFile(info.file, info.ext==='tsv'? '\t':undefined); takeArrayCandidates(ctx, info, parsed.rows); continue; }
-        else if(info.ext==='xlsx' || info.ext==='xls'){ const sheets = await parseExcelFile(info.file); if(!sheets.length){ ctx.diag.push('[WARN] empty workbook'); continue; } for(const sheet of sheets){ ctx.diag.push(`  ? sheet ${sheet.name}`); takeArrayCandidates(ctx, {path:`${info.path}:${sheet.name}`}, sheet.rows); } continue; }
+        else if(info.ext==='xlsx' || info.ext==='xls'){ const sheets = await parseExcelFile(info.file); if(!sheets.length){ ctx.diag.push('[WARN] empty workbook'); continue; } for(const sheet of sheets){ ctx.diag.push(`  [INFO] sheet ${sheet.name}`); takeArrayCandidates(ctx, {path:`${info.path}:${sheet.name}`}, sheet.rows); } continue; }
         else if(info.ext==='kml' || info.ext==='kmz'){ ctx.pendingGeom.push({ kind: info.ext, info }); ctx.diag.push('[GEOM] KML/KMZ queued for geo ingest'); continue; }
         else if(['shp','dbf','shx','prj','cpg'].includes(info.ext)){ ctx.pendingGeom.push({ kind:'shapefile', info }); continue; }
         else if(info.ext==='txt'){ const txt = await info.file.text(); const parsed = tryParse(txt); if(parsed && typeof parsed==='object'){ if(handleJsonStructure(ctx, info, parsed)) continue; if(Array.isArray(parsed)) { takeArrayCandidates(ctx, info, parsed); continue; } }
         }
       }catch(err){
-        ctx.diag.push(`  ? ingest error: ${err.message}`);
+        ctx.diag.push(`  [WARN] ingest error: ${err.message}`);
         ctx.errors.push(`${info.path}: ${err.message}`);
       }
     }

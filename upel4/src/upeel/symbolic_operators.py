@@ -15,7 +15,7 @@ import cmath
 import math
 import statistics
 
-from .codegen.helpers import COMMENT_SYNTAX, comment
+from .codegen.backends import BackendDescriptor, get_backend, iter_backends
 
 
 @dataclass()
@@ -591,60 +591,7 @@ def _time_perception(params: Mapping[str, Any]) -> float:
 
 
 def _available_backends() -> tuple[str, ...]:
-    primary = (
-        "ada",
-        "agda",
-        "armasm",
-        "bqn",
-        "bsv",
-        "c",
-        "chapel",
-        "chisel",
-        "coq",
-        "cpp",
-        "crystal",
-        "cs",
-        "cuda",
-        "d",
-        "dart",
-        "fortran",
-        "futhark",
-        "go",
-        "hs",
-        "intel_hls",
-        "isabelle",
-        "java",
-        "julia",
-        "kotlin",
-        "lean",
-        "lua",
-        "metal",
-        "mikroc",
-        "misrac",
-        "nim",
-        "ocaml",
-        "omp_f",
-        "opencl",
-        "r",
-        "rb",
-        "rust",
-        "spinal",
-        "spirv",
-        "sv",
-        "swift",
-        "sycl",
-        "ts",
-        "verilog",
-        "vhdl",
-        "zig",
-    )
-    extras = ("m", "slx", "js", "wasm", "vitis", "st")
-    ordered = list(dict.fromkeys(primary + extras))
-    # Ensure every backend referenced in COMMENT_SYNTAX is present for lowering.
-    for backend in COMMENT_SYNTAX:
-        if backend not in ordered:
-            ordered.append(backend)
-    return tuple(ordered)
+    return tuple(desc.name for desc in iter_backends())
 
 
 BACKENDS = _available_backends()
@@ -1575,15 +1522,17 @@ register(
 
 # Attach lowering stubs for every backend.
 for op in REGISTRY.values():
-    for backend in BACKENDS:
-        def _make_lower(op_ref: Op, backend_name: str) -> Callable[..., str]:
+    for backend_name in BACKENDS:
+        backend_descriptor = get_backend(backend_name)
+
+        def _make_lower(op_ref: Op, descriptor: BackendDescriptor) -> Callable[..., str]:
             def _lower(*args: Any) -> str:
-                rendered_args = ", ".join(map(str, args))
-                clause_comment = comment(backend_name, f"{op_ref.name}: {op_ref.clause}")
-                return f"{clause_comment} {op_ref.name}({rendered_args})"
+                arg_strings = [str(arg) for arg in args]
+                return descriptor.render_invocation(op_ref.name, arg_strings, op_ref.clause)
+
             return _lower
 
-        setattr(op, f"lower_{backend}", _make_lower(op, backend))
+        setattr(op, f"lower_{backend_name}", _make_lower(op, backend_descriptor))
 
 
 __all__ = ["REGISTRY", "Op", "BACKENDS", "QFormat"]
