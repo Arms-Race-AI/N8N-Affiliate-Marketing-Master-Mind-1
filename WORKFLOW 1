@@ -578,13 +578,13 @@
                                                                                      "id":  "stage",
                                                                                      "name":  "stage",
                                                                                      "type":  "string",
-                                                                                     "value":  "quality_gate"
+                                                                                     "value":  "={{ $json.stage || 'quality_gate' }}"
                                                                                  },
                                                                                  {
                                                                                      "id":  "status",
                                                                                      "name":  "status",
                                                                                      "type":  "string",
-                                                                                     "value":  "={{ $json.reason ? \u0027rejected\u0027 : \u0027ok\u0027 }}"
+                                                                                     "value":  "={{ $json.status || ($json.reason ? 'rejected' : 'ok') }}"
                                                                                  }
                                                                              ]
                                                          },
@@ -1464,6 +1464,110 @@
                                        -15584,
                                        4680
                                    ]
+                  },
+                  {
+                      "parameters":  {
+                                         "filePath":  "/data/agency/datastore/published.csv"
+                                     },
+                      "id":  "ed37763f-1ae7-4c80-a997-4cbe6758fefe",
+                      "name":  "Read published.csv (Idempotency)",
+                      "type":  "n8n-nodes-base.readBinaryFile",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -17536,
+                                       5200
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "functionCode":  "function parseCSV(str){const out=[],line=[];let q=false;for(let i=0;i<str.length;i++){const c=str[i];if(c==='\\r')continue;if(c==='\\n'){out.push(line.join(''));line.length=0;q=false;continue;}if(c==='\"'){if(q&&str[i+1]==='\"){line.push('\"');i++;}else q=!q;}else line.push(c);}if(line.length)out.push(line.join(''));return out.map(row=>{const a=[];let s='',qq=false;for(let i=0;i<row.length;i++){const ch=row[i];if(ch==='\"'){if(qq&&row[i+1]==='\"){s+='\"';i++;}else qq=!qq;}else if(ch===','&&!qq){a.push(s);s='';}else s+=ch;}a.push(s);return a;});}\nconst base=items[0].json||{};const slug=String(base.slug||'').trim();const binary=items[0].binary?.data?.data||items[0].binary?.data; if(!slug){return[{json:{...base,alreadyPublished:false}}];}\nlet exists=false; if(binary){const txt=Buffer.from(binary,'base64').toString('utf8');const rows=parseCSV(txt);if(rows.length>1){const header=rows[0].map(value=>String(value||'').trim());const idx=key=>header.indexOf(key);const slugIdx=idx('slug');const statusIdx=idx('status');for(let i=1;i<rows.length;i++){const row=rows[i];if(!row)continue;const rowSlug=slugIdx>=0?String(row[slugIdx]||'').trim():'';if(!rowSlug)continue;if(rowSlug===slug){const status=statusIdx>=0?String(row[statusIdx]||'').trim():'';if(status!=='failed'&&status!=='error'){exists=true;break;}}}}}\nreturn[{json:{...base,alreadyPublished:exists}}];"
+                                     },
+                      "id":  "7b871bc9-a9a7-4da1-aaf3-71be9d44001a",
+                      "name":  "Slug Already Published?",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -17312,
+                                       5200
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                              "boolean":  [
+                                                                              {
+                                                                                  "value1":  "={{$json.alreadyPublished===true}}",
+                                                                                  "operation":  "isTrue"
+                                                                              }
+                                                                          ]
+                                                          }
+                                     },
+                      "id":  "c699a3f4-0f0b-40ea-a42d-3a15ff3e813d",
+                      "name":  "IF Duplicate?",
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -17088,
+                                       5200
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "reason",
+                                                                                     "name":  "reason",
+                                                                                     "type":  "string",
+                                                                                     "value":  "duplicate_slug"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "stage",
+                                                                                     "name":  "stage",
+                                                                                     "type":  "string",
+                                                                                     "value":  "idempotency"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "status",
+                                                                                     "name":  "status",
+                                                                                     "type":  "string",
+                                                                                     "value":  "rejected"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "id":  "0efcbcdb-265d-4978-bc4f-be66135f71b9",
+                      "name":  "Duplicate Skip",
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       -16864,
+                                       5408
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                              "string":  [
+                                                                              {
+                                                                                  "value1":  "={{$json.status || 'ok'}}",
+                                                                                  "operation":  "equals",
+                                                                                  "value2":  "ok"
+                                                                              }
+                                                                          ]
+                                                          }
+                                     },
+                      "id":  "12bd8919-c28b-41c1-b5b2-b6da114c3f15",
+                      "name":  "Proceed to Production?",
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -17856,
+                                       5568
+                                   ]
                   }
               ],
     "connections":  {
@@ -1701,42 +1805,7 @@
                                                    "main":  [
                                                                 [
                                                                     {
-                                                                        "node":  "Build CTA Link",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    },
-                                                                    {
                                                                         "node":  "Read published.csv (Idempotency)",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    },
-                                                                    {
-                                                                        "node":  "Hookstorm Reactor",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    },
-                                                                    {
-                                                                        "node":  "Reflex Thread Kit",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    },
-                                                                    {
-                                                                        "node":  "Email Pulse Composer",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    },
-                                                                    {
-                                                                        "node":  "Referral Swarm Generator",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    },
-                                                                    {
-                                                                        "node":  "Challenge Cascade Planner",
-                                                                        "type":  "main",
-                                                                        "index":  0
-                                                                    },
-                                                                    {
-                                                                        "node":  "Dopamine Pingbacks Studio",
                                                                         "type":  "main",
                                                                         "index":  0
                                                                     }
@@ -1802,13 +1871,31 @@
                                               "main":  [
                                                            [
                                                                {
-                                                                   "node":  "Set Published Row",
+                                                                   "node":  "Duplicate Skip",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ],
+                                                           [
+                                                               {
+                                                                   "node":  "Quality Gate (Local)",
                                                                    "type":  "main",
                                                                    "index":  0
                                                                }
                                                            ]
                                                        ]
-                                          },
+                                           },
+                        "Duplicate Skip":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "Log Line",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                           },
                         "Quality Gate (Local)":  {
                                                      "main":  [
                                                                   [
@@ -1825,6 +1912,41 @@
                                                          [
                                                              {
                                                                  "node":  "Log Line",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Build CTA Link",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Hookstorm Reactor",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Reflex Thread Kit",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Email Pulse Composer",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Referral Swarm Generator",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Challenge Cascade Planner",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             },
+                                                             {
+                                                                 "node":  "Dopamine Pingbacks Studio",
                                                                  "type":  "main",
                                                                  "index":  0
                                                              }
@@ -1886,13 +2008,26 @@
                                            "main":  [
                                                         [
                                                             {
-                                                                "node":  "Write /data script",
+                                                                "node":  "Proceed to Production?",
                                                                 "type":  "main",
                                                                 "index":  0
                                                             }
                                                         ]
                                                     ]
                                        },
+                        "Proceed to Production?":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Write /data script",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ],
+                                                                  [
+                                                                  ]
+                                                              ]
+                                                 },
                         "Write /data script":  {
                                                    "main":  [
                                                                 [
