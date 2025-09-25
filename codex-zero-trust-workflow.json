@@ -845,7 +845,10 @@
     },
     {
       "parameters": {
-        "command": "set -euo pipefail\nout=/data/audit/workflows.json\ndefault_src=codex-zero-trust-workflow.json\nmkdir -p /data/audit\ncp \"$default_src\" \"$out\"\nscan=$(mktemp)\nif grep -Ei '\"token\"|api_key|password|secret|refresh' -n \"$out\" >\"$scan\"; then\n  dest=/data/agency/logs/secret_findings.txt\n  mkdir -p \"$(dirname \"$dest\")\"\n  /usr/local/bin/atomic-mv \"$scan\" \"$dest\"\nelse\n  rm -f \"$scan\"\nfi\n"
+        "command": "set -euo pipefail\nexport_path=/data/audit/workflows.json\nif [ ! -s \"$export_path\" ]; then\n  echo \"MISSING_EXPORT\"\n  exit 92\nfi\nscan=$(mktemp)\nif grep -Ei '\"token\"|api_key|password|secret|refresh' -n \"$export_path\" >\"$scan\"; then\n  dest=/data/agency/logs/secret_findings.txt\n  mkdir -p \"$(dirname \"$dest\")\"\n  /usr/local/bin/atomic-mv \"$scan\" \"$dest\"\n  echo \"SECRETS_FOUND\"\nelse\n  rm -f \"$scan\"\n  rm -f /data/agency/logs/secret_findings.txt 2>/dev/null || true\n  echo \"SECRETS_CLEAN\"\nfi",
+        "options": {
+          "shell": "/bin/bash"
+        }
       },
       "id": "59d3042d-aa84-4aad-8aca-4705f3aeeb6c",
       "name": "Secret Scan",
@@ -862,7 +865,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'SECRET_SCAN',\n  slug: null,\n  meta: { report: '/data/agency/logs/secret_findings.txt' }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nconst auditDir = '/data/audit';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nlet hash = null;\ntry {\n  hash = fs.readFileSync(path.join(auditDir, 'workflows.sha256'), 'utf8').trim();\n} catch (err) {\n  hash = null;\n}\nconst composePsPath = path.join(auditDir, 'compose.ps.txt');\nconst composeCfgPath = path.join(auditDir, 'compose.effective.yml');\nconst exportPath = path.join(auditDir, 'workflows.json');\nconst secretsReport = fs.existsSync('/data/agency/logs/secret_findings.txt') ? '/data/agency/logs/secret_findings.txt' : null;\nconst status = (items[0]?.json?.stdout || '').trim() || 'SECRETS_CLEAN';\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'SECRET_SCAN',\n  slug: null,\n  meta: {\n    status,\n    export: fs.existsSync(exportPath) ? exportPath : null,\n    sha256: hash,\n    composePs: fs.existsSync(composePsPath) ? composePsPath : null,\n    composeConfig: fs.existsSync(composeCfgPath) ? composeCfgPath : null,\n    secretsReport\n  }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\n+$/, '') + '\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn [{ json: payload }];"
       },
       "id": "ef0e2e90-28d7-4469-af16-46cd265f09fc",
       "name": "Log Secret Scan",
@@ -947,6 +950,22 @@
       "position": [
         1120,
         320
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\naudit_dir=/data/audit\nmkdir -p \"$audit_dir\"\ntmp_export=$(mktemp)\nn8n export:workflow --all >\"$tmp_export\"\nif [ ! -s \"$tmp_export\" ]; then\n  echo \"EMPTY_EXPORT\"\n  exit 90\nfi\n/usr/local/bin/atomic-mv \"$tmp_export\" \"$audit_dir/workflows.json\"\ntmp_hash=$(mktemp)\nsha256sum \"$audit_dir/workflows.json\" >\"$tmp_hash\"\n/usr/local/bin/atomic-mv \"$tmp_hash\" \"$audit_dir/workflows.sha256\"\ntmp_ps=$(mktemp)\ntmp_cfg=$(mktemp)\nif command -v docker >/dev/null 2>&1; then\n  docker compose ps -a >\"$tmp_ps\"\n  docker compose config >\"$tmp_cfg\"\nelif command -v docker-compose >/dev/null 2>&1; then\n  docker-compose ps -a >\"$tmp_ps\"\n  docker-compose config >\"$tmp_cfg\"\nelse\n  echo \"DOCKER_MISSING\" >\"$audit_dir/docker.missing\"\n  exit 91\nfi\n/usr/local/bin/atomic-mv \"$tmp_ps\" \"$audit_dir/compose.ps.txt\"\n/usr/local/bin/atomic-mv \"$tmp_cfg\" \"$audit_dir/compose.effective.yml\"\necho \"SNAPSHOT_OK\"",
+        "options": {
+          "shell": "/bin/bash"
+        }
+      },
+      "id": "b6a58e64-4a45-4d72-9f47-d69dfe16b5f4",
+      "name": "Capture Workflow Snapshot",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        -2360,
+        1120
       ]
     }
   ],
@@ -1661,7 +1680,7 @@
         "main": [
           [
             {
-              "node": "59d3042d-aa84-4aad-8aca-4705f3aeeb6c",
+              "node": "b6a58e64-4a45-4d72-9f47-d69dfe16b5f4",
               "type": "main"
             }
           ]
@@ -1698,6 +1717,18 @@
           [
             {
               "node": "069b922f-3752-42df-a3eb-9ab86ed05a2e",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "b6a58e64-4a45-4d72-9f47-d69dfe16b5f4": [
+      {
+        "main": [
+          [
+            {
+              "node": "59d3042d-aa84-4aad-8aca-4705f3aeeb6c",
               "type": "main"
             }
           ]
