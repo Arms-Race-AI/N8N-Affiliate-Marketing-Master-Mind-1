@@ -1,0 +1,834 @@
+{
+  "name": "Codex Zero-Trust Affiliate Stack",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "cbfc1e42-0c84-4c3b-b304-8180c3dd9f8c",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\ninstall_dir=/data/agency\nmkdir -p \"$install_dir\"/datastore \"$install_dir\"/queue/ideas \"$install_dir\"/queue/youtube \\\n  \"$install_dir\"/queue/bsky \"$install_dir\"/queue/peertube \"$install_dir\"/runs \"$install_dir\"/locks \\\n  \"$install_dir\"/logs \"$install_dir\"/dlq \"$install_dir\"/perf \"$install_dir\"/weights \\\n  \"$install_dir\"/performance \"$install_dir\"/inbox \"$install_dir\"/queue/hooks \"$install_dir\"/queue/threads\nchown -R 1000:1000 \"$install_dir\"\ncat <<'SH' > /usr/local/bin/atomic-mv\n#!/usr/bin/env bash\nset -euo pipefail\nsrc=\"$1\"; dst=\"$2\"; dir=\"$(dirname \"$dst\")\"\ntmp=\"$dir/.tmp.$(basename \"$dst\").$$\"\ncp \"$src\" \"$tmp\"\nsync\nmv -f \"$tmp\" \"$dst\"\nSH\nchmod 0755 /usr/local/bin/atomic-mv\n",
+        "options": {
+          "shell": "/bin/bash"
+        }
+      },
+      "id": "1af45beb-f57a-4671-9400-98e8db1a8e19",
+      "name": "Initialize Atomic FS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        -2100,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nexec 9> /data/agency/locks/content.lock\nif ! flock -n -w 3 9; then\n  echo BUSY\n  exit 90\nfi\necho $$ > /data/agency/locks/content.lock.pid\necho LOCKED\n",
+        "options": {
+          "shell": "/bin/bash"
+        }
+      },
+      "id": "4bada9d7-d787-4f68-9018-eb6ed32e69f1",
+      "name": "Acquire Content Lock",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nstatus=OK\nffmpeg -v error -hide_banner -f lavfi -i testsrc2=size=16x16:rate=1 -t 1 -f null - >/dev/null 2>&1 && echo OK_FFMPEG || { echo BAD_FFMPEG; status=FAIL; }\nmagick -version >/dev/null 2>&1 && echo OK_IMAGEMAGICK || { echo BAD_IMAGEMAGICK; status=FAIL; }\nespeak-ng --version >/dev/null 2>&1 && echo OK_ESPEAK || { echo BAD_ESPEAK; status=FAIL; }\ncurl -s http://ollama:11434/api/tags | jq -e '.models|length>0' >/dev/null 2>&1 && echo OK_OLLAMA || { echo BAD_OLLAMA; status=FAIL; }\nif [ \"$status\" = \"OK\" ]; then\n  echo HEALTH_OK\nelse\n  echo HEALTH_FAIL\nfi\n",
+        "options": {
+          "shell": "/bin/bash"
+        }
+      },
+      "id": "fbb19837-7fed-4b2b-bb5b-4664e6160872",
+      "name": "Run Health Probe",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1500,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const lines = (items[0].binary ? Buffer.from(items[0].binary.data.data, 'base64').toString('utf8') : items[0].json.stdout || '').split(/\\n/).filter(Boolean);\\nconst diagnostics = lines.filter(l => l.startsWith('OK_') || l.startsWith('BAD_'));\\nconst health = lines.includes('HEALTH_OK');\\nreturn [{ json: { health, diagnostics } }];"
+      },
+      "id": "7149a82d-8729-446c-b31f-1bd2152b104c",
+      "name": "Summarize Health",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\\nconst path = require('path');\\nconst weightsPath = '/data/agency/weights/weights.csv';\\nconst priors = {};\\ntry {\\n  if (fs.existsSync(weightsPath)) {\\n    const lines = fs.readFileSync(weightsPath, 'utf8').trim().split(/\\n/).slice(1);\\n    for (const line of lines) {\\n      if (!line.trim()) continue;\\n      const [niche, archetype, epv, weight] = line.split(',');\\n      if (!priors[niche]) priors[niche] = {};\\n      priors[niche][archetype] = Number(weight || 0);\\n    }\\n  }\\n} catch (error) {\\n  return [{ json: { priors: {}, priorsError: String(error) } }];\\n}\\nreturn [{ json: { priors } }];"
+      },
+      "id": "dd5ee26e-00f9-4ede-b20a-8454b2b4ace6",
+      "name": "Load Priors",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1500,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine"
+      },
+      "id": "6cf76466-1f81-4893-b95a-6794fb03439b",
+      "name": "Merge Health + Priors",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        -900,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst wait = ms => new Promise(res => setTimeout(res, ms));\nconst item = items[0].json || {};\nconst priors = item.priors || {};\nconst health = item.health === true;\nconst diagnostics = item.diagnostics || [];\nconst rateDir = '/data/agency/datastore/.ratelimit';\nfs.mkdirSync(rateDir, { recursive: true });\nconst sources = [\n  { source: 'google-trends-us', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=US', kind: 'rss', region: 'US' },\n  { source: 'google-trends-ca', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=CA', kind: 'rss', region: 'CA' },\n  { source: 'google-trends-gb', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=GB', kind: 'rss', region: 'GB' },\n  { source: 'google-trends-au', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=AU', kind: 'rss', region: 'AU' },\n  { source: 'google-trends-th', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=TH', kind: 'rss', region: 'TH' },\n  { source: 'reddit-buyitforlife', url: 'https://www.reddit.com/r/BuyItForLife/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-bestproducts', url: 'https://www.reddit.com/r/BestProducts/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-frugal', url: 'https://www.reddit.com/r/Frugal/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-headphones', url: 'https://www.reddit.com/r/Headphones/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-cooking', url: 'https://www.reddit.com/r/Cooking/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-running', url: 'https://www.reddit.com/r/Running/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-shoes', url: 'https://www.reddit.com/r/Shoes/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'hn-algolia-review', url: `https://hn.algolia.com/api/v1/search?query=review%20OR%20best%20OR%20deal&tags=story&numericFilters=created_at_i>${Math.floor(Date.now()/1000)-172800}`, kind: 'json', parser: 'hn' }\n];\nconst results = [];\nfor (const src of sources) {\n  const stampPath = path.join(rateDir, `${src.source}.stamp`);\n  if (fs.existsSync(stampPath)) {\n    const last = Number(fs.readFileSync(stampPath, 'utf8')) || 0;\n    const diff = Date.now() - last;\n    if (diff < 30000) {\n      const waitMs = 30000 - diff;\n      await wait(waitMs);\n    }\n  }\n  let response;\n  try {\n    response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: src.url,\n      json: src.kind === 'json',\n      headers: src.kind === 'json' ? { 'User-Agent': 'n8n-affiliate-mastermind/1.0' } : {}\n    });\n    fs.writeFileSync(stampPath, String(Date.now()), 'utf8');\n  } catch (error) {\n    diagnostics.push(`FETCH_FAIL:${src.source}`);\n    continue;\n  }\n  if (src.kind === 'rss') {\n    const xml = typeof response === 'string' ? response : response.body || '';\n    const itemMatches = Array.from(String(xml).matchAll(/<item>([\\s\\S]*?)<\\/item>/g));\n    for (const match of itemMatches) {\n      const block = match[1];\n      const title = (block.match(/<title><!\\[CDATA\\[(.*?)\\]\\]><\\/title>/) || block.match(/<title>([^<]+)<\\/title>/) || [null, '']).pop();\n      const link = (block.match(/<link>([^<]+)<\\/link>/) || [null, '']).pop();\n      if (!title || !link) continue;\n      const domain = link.replace(/^https?:\\/\\//, '').split(/[/?#]/)[0];\n      results.push({ source: src.source, region: src.region || '', title: title.trim(), link: link.trim(), domain, priors, health, diagnostics });\n    }\n  } else if (src.parser === 'reddit') {\n    const children = response?.data?.children || [];\n    for (const child of children.slice(0, 12)) {\n      const data = child?.data || {};\n      const title = data.title || '';\n      const link = `https://www.reddit.com${data.permalink || ''}`;\n      const domain = link.replace(/^https?:\\/\\//, '').split(/[/?#]/)[0];\n      if (!title) continue;\n      results.push({ source: src.source, title, link, domain, priors, health, diagnostics });\n    }\n  } else if (src.parser === 'hn') {\n    const hits = Array.isArray(response?.hits) ? response.hits : [];\n    for (const hit of hits.slice(0, 40)) {\n      const title = hit.title || hit.story_title || '';\n      const link = hit.url || hit.story_url || '';\n      if (!title || !link) continue;\n      const domain = link.replace(/^https?:\\/\\//, '').split(/[/?#]/)[0];\n      results.push({ source: src.source, title, link, domain, priors, health, diagnostics });\n    }\n  }\n}\nif (!results.length) {\n  return [];\n}\nreturn results.map(entry => ({ json: entry }));\n"
+      },
+      "id": "b8407220-0abe-42bc-bab4-e4e942cd2e0f",
+      "name": "Harvest Trends",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst seenPath = '/data/agency/datastore/seen_trends.txt';\nfs.mkdirSync(path.dirname(seenPath), { recursive: true });\nlet seen = new Set();\nlet existing = '';\nif (fs.existsSync(seenPath)) {\n  existing = fs.readFileSync(seenPath, 'utf8');\n  existing.split(/\n/).forEach(line => { if (line.trim()) seen.add(line.trim()); });\n}\nconst toPersist = [];\nconst fresh = [];\nfor (const item of items) {\n  const data = item.json || {};\n  const title = (data.title || '').toLowerCase().replace(/\\s+/g, ' ').trim();\n  const domain = (data.domain || '').toLowerCase().trim();\n  const norm = `${title}|${domain}`.replace(/[^a-z0-9| ]/g, '');\n  const hash = require('crypto').createHash('md5').update(norm).digest('hex');\n  if (seen.has(hash)) {\n    continue;\n  }\n  seen.add(hash);\n  toPersist.push(hash);\n  fresh.push({ ...data, hash });\n}\nif (toPersist.length) {\n  const tmpPath = `${seenPath}.tmp.${Date.now()}`;\n  const content = (existing ? existing.replace(/\n+$/,'') + '\n' : '') + toPersist.join('\n') + '\n';\n  fs.writeFileSync(tmpPath, content, 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmpPath, seenPath]);\n}\nreturn fresh.map(data => ({ json: data }));\n"
+      },
+      "id": "0701371f-4c75-4030-8676-97c4349b2a9a",
+      "name": "Deduplicate Trends",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst csvPath = '/data/agency/datastore/trends.csv';\nfs.mkdirSync(path.dirname(csvPath), { recursive: true });\nconst header = 'ts,source,title,link,domain\\n';\nconst lines = [];\nfor (const item of items) {\n  const data = item.json || {};\n  const ts = new Date().toISOString();\n  const escapedTitle = (data.title || '').replace(/\"/g, '\"\"');\n  const escapedLink = (data.link || '').replace(/\"/g, '\"\"');\n  const domain = (data.domain || '').replace(/\"/g, '');\n  lines.push(`${ts},${data.source||''},\"${escapedTitle}\",\"${escapedLink}\",${domain}`);\n}\nif (!lines.length) {\n  return items;\n}\nlet existing = '';\nif (fs.existsSync(csvPath)) {\n  existing = fs.readFileSync(csvPath, 'utf8');\n}\nlet output;\nif (existing.trim()) {\n  output = existing.replace(/\n+$/, '') + '\n' + lines.join('\n') + '\n';\n} else {\n  output = header + lines.join('\n') + '\n';\n}\nconst tmp = `${csvPath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, output, 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, csvPath]);\nreturn items;\n"
+      },
+      "id": "eea184e1-e8fc-4c20-b7a3-59a322526efc",
+      "name": "Persist Trends",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst lines = [];\nfor (const item of items) {\n  const data = item.json || {};\n  const payload = {\n    ts: new Date().toISOString(),\n    event: 'QUEUE_TREND',\n    slug: data.hash,\n    meta: { source: data.source, title: data.title, link: data.link }\n  };\n  lines.push(JSON.stringify(payload));\n}\nif (lines.length) {\n  const tmp = `${logPath}.tmp.${Date.now()}`;\n  const existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';\n  const output = (existing ? existing.replace(/\n+$/, '') + '\n' : '') + lines.join('\n') + '\n';\n  fs.writeFileSync(tmp, output, 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\n}\nreturn items;\n"
+      },
+      "id": "051fd7ad-93e1-4fca-a6e2-a6032bfe6ae0",
+      "name": "Log Trend Intake",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        200,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const crypto = require('crypto');\nreturn items.map(item => {\n  const data = item.json || {};\n  const slugBase = data.title || 'idea';\n  const slug = slugBase.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || crypto.randomBytes(4).toString('hex');\n  const priors = data.priors || {};\n  return {\n    json: {\n      ...data,\n      slug,\n      ideaPrompt: JSON.stringify({\n        model: data?.model || (process.env.OLLAMA_MODEL || 'llama3.1'),\n        prompt: `Output STRICT MINIFIED JSON only. SCHEMA:{\"title\":string,\"hook\":string,\"script\":{\"beats\":[{\"t\":number,\"line\":string}]},\"seo\":{\"title\":string,\"description\":string,\"keywords\":string[]},\"hashtags\":string[],\"assets\":{\"bg_keywords\":string[],\"tts_voice\":string},\"affiliate\":{\"cta\":string,\"utm_campaign\":string},\"archetype\":\"commodity|mid|high|subscription\"} CONSTRAINTS:120-180s, lines<=14 words, monetizable evergreen angle, no external links. CONTEXT:trendTitle=\"${data.title}\";source=\"${data.source}\";url=\"${data.link}\";persona=blunt technical. PRIORS=${JSON.stringify(priors)}. Bias selection toward (niche, archetype) with PRIORS.weight>=0.12; otherwise uniform. RETURN ONLY JSON.`,\n        stream: false,\n        options: { temperature: 0.7 }\n      })\n    }\n  };\n});\n"
+      },
+      "id": "fb0580bc-07d6-4eae-99b4-ae41bf5f98d3",
+      "name": "Build Ideation Prompt",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        440,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={{ $json.ideaPrompt }}"
+      },
+      "id": "942b1d70-9070-4745-85c9-7a84c3310e60",
+      "name": "Ollama Ideation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const raw = $json.response || $json.body || $json.data || '';\nconst cleaned = String(raw).replace(/```json|```/g, '').trim();\nlet obj;\ntry {\n  obj = JSON.parse(cleaned);\n} catch (error) {\n  return [{ json: { valid: false, err: 'parse', raw: cleaned, idea: null, slug: $json.slug } }];\n}\nfunction req(cond, field) { if (!cond) throw new Error(field); }\ntry {\n  req(typeof obj.title === 'string' && obj.title.length > 4, 'title');\n  req(Array.isArray(obj.script?.beats) && obj.script.beats.length >= 8, 'beats');\n  for (const beat of obj.script.beats) {\n    req(typeof beat.t === 'number', 'beat.t');\n    req(typeof beat.line === 'string' && beat.line.length > 0, 'beat.line');\n  }\n  req(typeof obj.archetype === 'string', 'archetype');\n  return [{ json: { valid: true, idea: obj, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n} catch (error) {\n  return [{ json: { valid: false, err: 'schema', detail: String(error), raw: cleaned, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n}\n"
+      },
+      "id": "14936949-5ed4-4abe-a112-9814f83425b8",
+      "name": "Validate Idea JSON",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        920,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "a15802c2-dc1c-47d3-aa2e-45a4574b593e",
+      "name": "IF Idea Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const error = $json.err || 'parse';\nconst raw = $json.raw || '';\nreturn [{ json: { slug: $json.slug, repairBody: JSON.stringify({ model: process.env.OLLAMA_MODEL || 'llama3.1', prompt: `Repair JSON to match schema. Previous error: ${error}. RAW:${raw}`, stream: false, options: { temperature: 0.3 } }), health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n"
+      },
+      "id": "3421da9a-bd8b-4b4a-9d78-eda3418253b1",
+      "name": "Build Repair Prompt",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={{ $json.repairBody }}"
+      },
+      "id": "f241f177-7e08-4f75-8e4f-0a351abf2a6b",
+      "name": "Ollama Repair",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const raw = $json.response || $json.body || '';\nconst cleaned = String(raw).replace(/```json|```/g, '').trim();\nlet obj;\ntry {\n  obj = JSON.parse(cleaned);\n} catch (error) {\n  return [{ json: { valid: false, err: 'repair-parse', raw: cleaned, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n}\nfunction req(cond, field) { if (!cond) throw new Error(field); }\ntry {\n  req(typeof obj.title === 'string' && obj.title.length > 4, 'title');\n  req(Array.isArray(obj.script?.beats) && obj.script.beats.length >= 8, 'beats');\n  for (const beat of obj.script.beats) {\n    req(typeof beat.t === 'number', 'beat.t');\n    req(typeof beat.line === 'string' && beat.line.length > 0, 'beat.line');\n  }\n  req(typeof obj.archetype === 'string', 'archetype');\n  return [{ json: { valid: true, idea: obj, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n} catch (error) {\n  return [{ json: { valid: false, err: 'repair-schema', detail: String(error), raw: cleaned, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n}\n"
+      },
+      "id": "f2d2243e-7e50-486a-ba66-12050d71280f",
+      "name": "Validate Repair",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1640,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "4f729b52-6a23-4dfb-aba7-1d09487bfa79",
+      "name": "IF Repair Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nfs.mkdirSync('/data/agency/dlq', { recursive: true });\nconst slug = $json.slug || `idea-${Date.now()}`;\nconst filePath = `/data/agency/dlq/ideas-${slug}.json`;\nconst tmp = `${filePath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ ts: new Date().toISOString(), err: $json.err || $json.detail || 'unknown', raw: $json.raw || '' }) + '\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, filePath]);\nreturn [{ json: { dlq: filePath, slug } }];\n"
+      },
+      "id": "0500a1cd-645e-45c0-a3e2-1f3ed02a8112",
+      "name": "Write DLQ",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2120,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "465baae1-28ce-4da1-a2a3-7e3b1a26522c",
+      "name": "Merge Idea Streams",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        2120,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst idea = $json.idea;\nconst queuePath = `/data/agency/queue/ideas/${slug}.json`;\nconst tmp = `${queuePath}.part.${Date.now()}`;\nfs.mkdirSync(path.dirname(queuePath), { recursive: true });\nfs.writeFileSync(tmp, JSON.stringify({ ...idea, source: $json.source, link: $json.link, priors: $json.priors }, null, 0), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, queuePath]);\nreturn [{ json: { ...$json, ideaPath: queuePath } }];\n"
+      },
+      "id": "192e9a83-064e-42d9-8ff1-c47abc7aca95",
+      "name": "Queue Idea",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2360,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = { ts: new Date().toISOString(), event: 'QUEUE_IDEA', slug: $json.slug, meta: $json.idea };\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';\nconst output = (existing ? existing.replace(/\n+$/, '') + '\n' : '') + JSON.stringify(payload) + '\n';\nfs.writeFileSync(tmp, output, 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+      },
+      "id": "e426493f-1c41-4372-b46f-b96391020db8",
+      "name": "Log Idea Event",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2600,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.health }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "7ea81417-16d7-4672-b8c1-977eec36d3c3",
+      "name": "IF Health OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2840,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst metaPath = `/data/agency/queue/youtube/${slug}.meta.json`;\nfs.mkdirSync(path.dirname(metaPath), { recursive: true });\nconst tmp = `${metaPath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ slug, health: false, idea: $json.idea, ts: new Date().toISOString() }), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, metaPath]);\nreturn [{ json: { ...$json, metaPath } }];\n"
+      },
+      "id": "0c3ea71b-b2ae-4980-a689-3df6e240d407",
+      "name": "Write Queue Metadata",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        3080,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst { spawnSync } = require('child_process');\nconst slug = $json.slug;\nconst runsDir = '/data/agency/runs';\nconst queueDir = '/data/agency/queue/youtube';\nfs.mkdirSync(runsDir, { recursive: true });\nfs.mkdirSync(queueDir, { recursive: true });\nconst scriptLines = ($json.idea?.script?.beats || []).map(beat => beat.line).join(' ');\nconst wavPath = `${runsDir}/${slug}.wav`;\nconst pngPath = `${runsDir}/${slug}.png`;\nconst mp4Path = `${queueDir}/${slug}.mp4`;\nconst titlePath = `${queueDir}/${slug}.title.txt`;\nconst descPath = `${queueDir}/${slug}.desc.txt`;\nconst tagsPath = `${queueDir}/${slug}.tags.txt`;\nconst metaPath = `${queueDir}/${slug}.meta.json`;\nfunction run(cmd, args, input) {\n  const res = spawnSync(cmd, args, { encoding: 'utf8', input });\n  if (res.status !== 0) {\n    const logPath = '/data/agency/logs/render_fail.jsonl';\n    fs.mkdirSync(path.dirname(logPath), { recursive: true });\n    const payload = { ts: new Date().toISOString(), slug, cmd: [cmd, ...args].join(' '), exit: res.status, stderr: (res.stderr || '').split(/\n/).slice(-5).join('\n') };\n    const tmp = `${logPath}.tmp.${Date.now()}`;\n    const existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';\n    const output = (existing ? existing.replace(/\n+$/, '') + '\n' : '') + JSON.stringify(payload) + '\n';\n    fs.writeFileSync(tmp, output, 'utf8');\n    require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\n    throw new Error(`render-fail:${cmd}`);\n  }\n}\nrun('espeak-ng', ['-v', 'en-us', '-s', '175', '-p', '35', '-w', wavPath, scriptLines]);\nrun('magick', ['-size', '1080x1920', 'xc:#0f0f0f', '-gravity', 'Center', '-pointsize', '64', '-fill', 'white', '-annotate', '+0+0', $json.idea?.title || ''], pngPath);\nrun('ffmpeg', ['-y', '-loop', '1', '-i', pngPath, '-i', wavPath, '-c:v', 'libx264', '-tune', 'stillimage', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-r', '30', '-pix_fmt', 'yuv420p', '-vf', 'scale=1080:1920', mp4Path]);\nfs.writeFileSync(titlePath, ($json.idea?.seo?.title || $json.idea?.title || ''), 'utf8');\nfs.writeFileSync(descPath, ($json.idea?.seo?.description || ''), 'utf8');\nfs.writeFileSync(tagsPath, ($json.idea?.seo?.keywords || []).join(','), 'utf8');\nconst tmpMeta = `${metaPath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmpMeta, JSON.stringify({ slug, health: true, ts: new Date().toISOString(), idea: $json.idea }), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmpMeta, metaPath]);\nreturn [{ json: { ...$json, wavPath, pngPath, mp4Path, titlePath, descPath, tagsPath, metaPath } }];\n"
+      },
+      "id": "3b1fbff2-7f20-4e0c-b5bc-d6dba7c27bbf",
+      "name": "Render Media",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        3080,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $env.YT_UPLOAD_ENABLED === '1' }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "e272a115-3e82-4b17-b092-8b324fcccb95",
+      "name": "IF YT Upload Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3320,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst marker = `${$json.mp4Path || ''}.queue_only`;\nif ($json.mp4Path) {\n  fs.closeSync(fs.openSync(marker, 'w'));\n}\nreturn items;\n"
+      },
+      "id": "ce6f54a5-6a7d-4947-964c-346b570d2987",
+      "name": "Queue Only Marker",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        3560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst failPath = `${$json.mp4Path || ''}.retry1.fail`;\ntry {\n  throw new Error('UPLOAD_NOT_IMPLEMENTED');\n} catch (error) {\n  fs.writeFileSync(failPath, `Upload failed: ${error.message}`, 'utf8');\n}\nreturn items;\n"
+      },
+      "id": "6e81b13d-08f2-434a-bbd4-494f20ce55a6",
+      "name": "YouTube Upload Stub",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        3560,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "command": "rm -f /data/agency/locks/content.lock /data/agency/locks/content.lock.pid\n",
+        "options": {
+          "shell": "/bin/bash"
+        }
+      },
+      "id": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+      "name": "Release Lock",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3800,
+        160
+      ]
+    }
+  ],
+  "connections": {
+    "cbfc1e42-0c84-4c3b-b304-8180c3dd9f8c": [
+      {
+        "main": [
+          [
+            {
+              "node": "1af45beb-f57a-4671-9400-98e8db1a8e19",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "1af45beb-f57a-4671-9400-98e8db1a8e19": [
+      {
+        "main": [
+          [
+            {
+              "node": "4bada9d7-d787-4f68-9018-eb6ed32e69f1",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "4bada9d7-d787-4f68-9018-eb6ed32e69f1": [
+      {
+        "main": [
+          [
+            {
+              "node": "fbb19837-7fed-4b2b-bb5b-4664e6160872",
+              "type": "main"
+            },
+            {
+              "node": "dd5ee26e-00f9-4ede-b20a-8454b2b4ace6",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "fbb19837-7fed-4b2b-bb5b-4664e6160872": [
+      {
+        "main": [
+          [
+            {
+              "node": "7149a82d-8729-446c-b31f-1bd2152b104c",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "dd5ee26e-00f9-4ede-b20a-8454b2b4ace6": [
+      {
+        "main": [
+          [
+            {
+              "node": "6cf76466-1f81-4893-b95a-6794fb03439b",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "7149a82d-8729-446c-b31f-1bd2152b104c": [
+      {
+        "main": [
+          [],
+          [
+            {
+              "node": "6cf76466-1f81-4893-b95a-6794fb03439b",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "6cf76466-1f81-4893-b95a-6794fb03439b": [
+      {
+        "main": [
+          [
+            {
+              "node": "b8407220-0abe-42bc-bab4-e4e942cd2e0f",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "b8407220-0abe-42bc-bab4-e4e942cd2e0f": [
+      {
+        "main": [
+          [
+            {
+              "node": "0701371f-4c75-4030-8676-97c4349b2a9a",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "0701371f-4c75-4030-8676-97c4349b2a9a": [
+      {
+        "main": [
+          [
+            {
+              "node": "eea184e1-e8fc-4c20-b7a3-59a322526efc",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "eea184e1-e8fc-4c20-b7a3-59a322526efc": [
+      {
+        "main": [
+          [
+            {
+              "node": "051fd7ad-93e1-4fca-a6e2-a6032bfe6ae0",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "051fd7ad-93e1-4fca-a6e2-a6032bfe6ae0": [
+      {
+        "main": [
+          [
+            {
+              "node": "fb0580bc-07d6-4eae-99b4-ae41bf5f98d3",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "fb0580bc-07d6-4eae-99b4-ae41bf5f98d3": [
+      {
+        "main": [
+          [
+            {
+              "node": "942b1d70-9070-4745-85c9-7a84c3310e60",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "942b1d70-9070-4745-85c9-7a84c3310e60": [
+      {
+        "main": [
+          [
+            {
+              "node": "14936949-5ed4-4abe-a112-9814f83425b8",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "14936949-5ed4-4abe-a112-9814f83425b8": [
+      {
+        "main": [
+          [
+            {
+              "node": "a15802c2-dc1c-47d3-aa2e-45a4574b593e",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "a15802c2-dc1c-47d3-aa2e-45a4574b593e": [
+      {
+        "main": [
+          [
+            {
+              "node": "465baae1-28ce-4da1-a2a3-7e3b1a26522c",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      {
+        "main": [
+          [
+            {
+              "node": "3421da9a-bd8b-4b4a-9d78-eda3418253b1",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "3421da9a-bd8b-4b4a-9d78-eda3418253b1": [
+      {
+        "main": [
+          [
+            {
+              "node": "f241f177-7e08-4f75-8e4f-0a351abf2a6b",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "f241f177-7e08-4f75-8e4f-0a351abf2a6b": [
+      {
+        "main": [
+          [
+            {
+              "node": "f2d2243e-7e50-486a-ba66-12050d71280f",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "f2d2243e-7e50-486a-ba66-12050d71280f": [
+      {
+        "main": [
+          [
+            {
+              "node": "4f729b52-6a23-4dfb-aba7-1d09487bfa79",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "4f729b52-6a23-4dfb-aba7-1d09487bfa79": [
+      {
+        "main": [
+          [],
+          [
+            {
+              "node": "465baae1-28ce-4da1-a2a3-7e3b1a26522c",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      {
+        "main": [
+          [
+            {
+              "node": "0500a1cd-645e-45c0-a3e2-1f3ed02a8112",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "465baae1-28ce-4da1-a2a3-7e3b1a26522c": [
+      {
+        "main": [
+          [
+            {
+              "node": "192e9a83-064e-42d9-8ff1-c47abc7aca95",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "192e9a83-064e-42d9-8ff1-c47abc7aca95": [
+      {
+        "main": [
+          [
+            {
+              "node": "e426493f-1c41-4372-b46f-b96391020db8",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "e426493f-1c41-4372-b46f-b96391020db8": [
+      {
+        "main": [
+          [
+            {
+              "node": "7ea81417-16d7-4672-b8c1-977eec36d3c3",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "7ea81417-16d7-4672-b8c1-977eec36d3c3": [
+      {
+        "main": [
+          [
+            {
+              "node": "3b1fbff2-7f20-4e0c-b5bc-d6dba7c27bbf",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      {
+        "main": [
+          [
+            {
+              "node": "0c3ea71b-b2ae-4980-a689-3df6e240d407",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "3b1fbff2-7f20-4e0c-b5bc-d6dba7c27bbf": [
+      {
+        "main": [
+          [
+            {
+              "node": "e272a115-3e82-4b17-b092-8b324fcccb95",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "e272a115-3e82-4b17-b092-8b324fcccb95": [
+      {
+        "main": [
+          [
+            {
+              "node": "6e81b13d-08f2-434a-bbd4-494f20ce55a6",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      {
+        "main": [
+          [
+            {
+              "node": "ce6f54a5-6a7d-4947-964c-346b570d2987",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "ce6f54a5-6a7d-4947-964c-346b570d2987": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "6e81b13d-08f2-434a-bbd4-494f20ce55a6": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "0c3ea71b-b2ae-4980-a689-3df6e240d407": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "staticData": null
+}
