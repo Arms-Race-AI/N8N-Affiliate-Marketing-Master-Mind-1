@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "command": "set -euo pipefail\ninstall_dir=/data/agency\nmkdir -p \"$install_dir\"/datastore \"$install_dir\"/queue/ideas \"$install_dir\"/queue/youtube \\\n  \"$install_dir\"/queue/bsky \"$install_dir\"/queue/peertube \"$install_dir\"/runs \"$install_dir\"/locks \\\n  \"$install_dir\"/logs \"$install_dir\"/dlq \"$install_dir\"/perf \"$install_dir\"/weights \\\n  \"$install_dir\"/performance \"$install_dir\"/inbox \"$install_dir\"/queue/hooks \"$install_dir\"/queue/threads\nchown -R 1000:1000 \"$install_dir\"\ncat <<'SH' > /usr/local/bin/atomic-mv\n#!/usr/bin/env bash\nset -euo pipefail\nsrc=\"$1\"; dst=\"$2\"; dir=\"$(dirname \"$dst\")\"\ntmp=\"$dir/.tmp.$(basename \"$dst\").$$\"\ncp \"$src\" \"$tmp\"\nsync\nmv -f \"$tmp\" \"$dst\"\nSH\nchmod 0755 /usr/local/bin/atomic-mv\n",
+        "command": "\nset -euo pipefail\ninstall_dir=/data/agency\nmkdir -p \"$install_dir\"/datastore \"$install_dir\"/queue/ideas \"$install_dir\"/queue/youtube \\\n  \"$install_dir\"/queue/bsky \"$install_dir\"/queue/peertube \"$install_dir\"/queue/hooks \"$install_dir\"/queue/threads \\\n  \"$install_dir\"/runs \"$install_dir\"/locks \"$install_dir\"/logs \"$install_dir\"/dlq \\\n  \"$install_dir\"/perf \"$install_dir\"/weights \"$install_dir\"/performance \"$install_dir\"/inbox\nchown -R 1000:1000 \"$install_dir\"\ncat <<'SH' > /usr/local/bin/atomic-mv\n#!/usr/bin/env bash\nset -euo pipefail\nsrc=\"$1\"; dst=\"$2\"; dir=\"$(dirname \"$dst\")\"\ntmp=\"$dir/.tmp.$(basename \"$dst\").$$\"\ncp \"$src\" \"$tmp\"\nsync\nmv -f \"$tmp\" \"$dst\"\nSH\nchmod 0755 /usr/local/bin/atomic-mv\n",
         "options": {
           "shell": "/bin/bash"
         }
@@ -30,7 +30,7 @@
     },
     {
       "parameters": {
-        "command": "set -euo pipefail\nexec 9> /data/agency/locks/content.lock\nif ! flock -n -w 3 9; then\n  echo BUSY\n  exit 90\nfi\necho $$ > /data/agency/locks/content.lock.pid\necho LOCKED\n",
+        "command": "\nset -euo pipefail\nlock=/data/agency/locks/content.lock\nholder=/data/agency/locks/content.lock.holder\npidfile=/data/agency/locks/content.lock.pid\nmkdir -p \"$(dirname \"$lock\")\"\nif [ -f \"$holder\" ]; then\n  old=$(cat \"$holder\" 2>/dev/null || true)\n  if [ -n \"$old\" ] && kill -0 \"$old\" 2>/dev/null; then\n    echo BUSY\n    exit 90\n  fi\n  rm -f \"$holder\"\nfi\ncat <<'HOLD' >/tmp/hold-content-lock.sh\n#!/usr/bin/env bash\nset -euo pipefail\nlock=\"$1\"\npidfile=\"$2\"\nholder=\"$3\"\nexec 9>\"$lock\"\nif ! flock -w 3 9; then\n  exit 90\nfi\necho $$ > \"$pidfile\"\ntrap 'rm -f \"$pidfile\"' EXIT\nwhile [ -f \"$holder\" ]; do\n  sleep 5\ndone\nHOLD\nchmod +x /tmp/hold-content-lock.sh\n/tmp/hold-content-lock.sh \"$lock\" \"$pidfile\" \"$holder\" &\nbg=$!\nsleep 0.4\nif ! kill -0 \"$bg\" 2>/dev/null; then\n  echo BUSY\n  exit 90\nfi\necho $bg > \"$holder\"\necho LOCKED\n",
         "options": {
           "shell": "/bin/bash"
         }
@@ -46,7 +46,7 @@
     },
     {
       "parameters": {
-        "command": "set -euo pipefail\nstatus=OK\nffmpeg -v error -hide_banner -f lavfi -i testsrc2=size=16x16:rate=1 -t 1 -f null - >/dev/null 2>&1 && echo OK_FFMPEG || { echo BAD_FFMPEG; status=FAIL; }\nmagick -version >/dev/null 2>&1 && echo OK_IMAGEMAGICK || { echo BAD_IMAGEMAGICK; status=FAIL; }\nespeak-ng --version >/dev/null 2>&1 && echo OK_ESPEAK || { echo BAD_ESPEAK; status=FAIL; }\ncurl -s http://ollama:11434/api/tags | jq -e '.models|length>0' >/dev/null 2>&1 && echo OK_OLLAMA || { echo BAD_OLLAMA; status=FAIL; }\nif [ \"$status\" = \"OK\" ]; then\n  echo HEALTH_OK\nelse\n  echo HEALTH_FAIL\nfi\n",
+        "command": "\nset -euo pipefail\nstatus=OK\nif ffmpeg -v error -hide_banner -f lavfi -i testsrc2=size=16x16:rate=1 -t 1 -f null - >/dev/null 2>&1; then\n  echo OK_FFMPEG\nelse\n  echo BAD_FFMPEG\n  status=FAIL\nfi\nif magick -version >/dev/null 2>&1; then\n  echo OK_IMAGEMAGICK\nelse\n  echo BAD_IMAGEMAGICK\n  status=FAIL\nfi\nif espeak-ng --version >/dev/null 2>&1; then\n  echo OK_ESPEAK\nelse\n  echo BAD_ESPEAK\n  status=FAIL\nfi\nif curl -s http://ollama:11434/api/tags | jq -e '.models|length>0' >/dev/null 2>&1; then\n  echo OK_OLLAMA\nelse\n  echo BAD_OLLAMA\n  status=FAIL\nfi\nif [ \"$status\" = \"OK\" ]; then\n  echo HEALTH_OK\nelse\n  echo HEALTH_FAIL\nfi\n",
         "options": {
           "shell": "/bin/bash"
         }
@@ -62,7 +62,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const lines = (items[0].binary ? Buffer.from(items[0].binary.data.data, 'base64').toString('utf8') : items[0].json.stdout || '').split(/\\n/).filter(Boolean);\\nconst diagnostics = lines.filter(l => l.startsWith('OK_') || l.startsWith('BAD_'));\\nconst health = lines.includes('HEALTH_OK');\\nreturn [{ json: { health, diagnostics } }];"
+        "functionCode": "\nconst lines = (items[0].binary ? Buffer.from(items[0].binary.data.data, 'base64').toString('utf8') : items[0].json.stdout || '').split(/\n/).filter(Boolean);\nconst diagnostics = lines.filter(l => l.startsWith('OK_') || l.startsWith('BAD_'));\nconst health = lines.includes('HEALTH_OK');\nreturn [{ json: { health, diagnostics, healthCheckedAt: new Date().toISOString() } }];\n"
       },
       "id": "7149a82d-8729-446c-b31f-1bd2152b104c",
       "name": "Summarize Health",
@@ -75,7 +75,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\\nconst path = require('path');\\nconst weightsPath = '/data/agency/weights/weights.csv';\\nconst priors = {};\\ntry {\\n  if (fs.existsSync(weightsPath)) {\\n    const lines = fs.readFileSync(weightsPath, 'utf8').trim().split(/\\n/).slice(1);\\n    for (const line of lines) {\\n      if (!line.trim()) continue;\\n      const [niche, archetype, epv, weight] = line.split(',');\\n      if (!priors[niche]) priors[niche] = {};\\n      priors[niche][archetype] = Number(weight || 0);\\n    }\\n  }\\n} catch (error) {\\n  return [{ json: { priors: {}, priorsError: String(error) } }];\\n}\\nreturn [{ json: { priors } }];"
+        "functionCode": "\nconst fs = require('fs');\nconst weightsPath = '/data/agency/weights/weights.csv';\nconst priors = {};\ntry {\n  if (fs.existsSync(weightsPath)) {\n    const lines = fs.readFileSync(weightsPath, 'utf8').trim().split(/\n/).slice(1);\n    for (const line of lines) {\n      if (!line.trim()) continue;\n      const [niche, archetype, epv, weight] = line.split(',');\n      if (!priors[niche]) priors[niche] = {};\n      priors[niche][archetype] = Number(weight || 0);\n    }\n  }\n} catch (error) {\n  return [{ json: { priors: {}, priorsError: String(error) } }];\n}\nreturn [{ json: { priors } }];\n"
       },
       "id": "dd5ee26e-00f9-4ede-b20a-8454b2b4ace6",
       "name": "Load Priors",
@@ -101,7 +101,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst wait = ms => new Promise(res => setTimeout(res, ms));\nconst item = items[0].json || {};\nconst priors = item.priors || {};\nconst health = item.health === true;\nconst diagnostics = item.diagnostics || [];\nconst rateDir = '/data/agency/datastore/.ratelimit';\nfs.mkdirSync(rateDir, { recursive: true });\nconst sources = [\n  { source: 'google-trends-us', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=US', kind: 'rss', region: 'US' },\n  { source: 'google-trends-ca', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=CA', kind: 'rss', region: 'CA' },\n  { source: 'google-trends-gb', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=GB', kind: 'rss', region: 'GB' },\n  { source: 'google-trends-au', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=AU', kind: 'rss', region: 'AU' },\n  { source: 'google-trends-th', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=TH', kind: 'rss', region: 'TH' },\n  { source: 'reddit-buyitforlife', url: 'https://www.reddit.com/r/BuyItForLife/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-bestproducts', url: 'https://www.reddit.com/r/BestProducts/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-frugal', url: 'https://www.reddit.com/r/Frugal/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-headphones', url: 'https://www.reddit.com/r/Headphones/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-cooking', url: 'https://www.reddit.com/r/Cooking/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-running', url: 'https://www.reddit.com/r/Running/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-shoes', url: 'https://www.reddit.com/r/Shoes/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'hn-algolia-review', url: `https://hn.algolia.com/api/v1/search?query=review%20OR%20best%20OR%20deal&tags=story&numericFilters=created_at_i>${Math.floor(Date.now()/1000)-172800}`, kind: 'json', parser: 'hn' }\n];\nconst results = [];\nfor (const src of sources) {\n  const stampPath = path.join(rateDir, `${src.source}.stamp`);\n  if (fs.existsSync(stampPath)) {\n    const last = Number(fs.readFileSync(stampPath, 'utf8')) || 0;\n    const diff = Date.now() - last;\n    if (diff < 30000) {\n      const waitMs = 30000 - diff;\n      await wait(waitMs);\n    }\n  }\n  let response;\n  try {\n    response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: src.url,\n      json: src.kind === 'json',\n      headers: src.kind === 'json' ? { 'User-Agent': 'n8n-affiliate-mastermind/1.0' } : {}\n    });\n    fs.writeFileSync(stampPath, String(Date.now()), 'utf8');\n  } catch (error) {\n    diagnostics.push(`FETCH_FAIL:${src.source}`);\n    continue;\n  }\n  if (src.kind === 'rss') {\n    const xml = typeof response === 'string' ? response : response.body || '';\n    const itemMatches = Array.from(String(xml).matchAll(/<item>([\\s\\S]*?)<\\/item>/g));\n    for (const match of itemMatches) {\n      const block = match[1];\n      const title = (block.match(/<title><!\\[CDATA\\[(.*?)\\]\\]><\\/title>/) || block.match(/<title>([^<]+)<\\/title>/) || [null, '']).pop();\n      const link = (block.match(/<link>([^<]+)<\\/link>/) || [null, '']).pop();\n      if (!title || !link) continue;\n      const domain = link.replace(/^https?:\\/\\//, '').split(/[/?#]/)[0];\n      results.push({ source: src.source, region: src.region || '', title: title.trim(), link: link.trim(), domain, priors, health, diagnostics });\n    }\n  } else if (src.parser === 'reddit') {\n    const children = response?.data?.children || [];\n    for (const child of children.slice(0, 12)) {\n      const data = child?.data || {};\n      const title = data.title || '';\n      const link = `https://www.reddit.com${data.permalink || ''}`;\n      const domain = link.replace(/^https?:\\/\\//, '').split(/[/?#]/)[0];\n      if (!title) continue;\n      results.push({ source: src.source, title, link, domain, priors, health, diagnostics });\n    }\n  } else if (src.parser === 'hn') {\n    const hits = Array.isArray(response?.hits) ? response.hits : [];\n    for (const hit of hits.slice(0, 40)) {\n      const title = hit.title || hit.story_title || '';\n      const link = hit.url || hit.story_url || '';\n      if (!title || !link) continue;\n      const domain = link.replace(/^https?:\\/\\//, '').split(/[/?#]/)[0];\n      results.push({ source: src.source, title, link, domain, priors, health, diagnostics });\n    }\n  }\n}\nif (!results.length) {\n  return [];\n}\nreturn results.map(entry => ({ json: entry }));\n"
+        "functionCode": "\nconst fs = require('fs');\nconst path = require('path');\nconst wait = ms => new Promise(res => setTimeout(res, ms));\nconst item = items[0].json || {};\nconst priors = item.priors || {};\nconst health = item.health === true;\nconst diagnostics = Array.isArray(item.diagnostics) ? [...item.diagnostics] : [];\nconst runId = `run-${Date.now()}`;\nconst rateDir = '/data/agency/datastore/.ratelimit';\nfs.mkdirSync(rateDir, { recursive: true });\nconst sources = [\n  { source: 'google-trends-us', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=US', kind: 'rss', region: 'US' },\n  { source: 'google-trends-ca', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=CA', kind: 'rss', region: 'CA' },\n  { source: 'google-trends-gb', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=GB', kind: 'rss', region: 'GB' },\n  { source: 'google-trends-au', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=AU', kind: 'rss', region: 'AU' },\n  { source: 'google-trends-th', url: 'https://trends.google.com/trends/trendingsearches/daily/rss?geo=TH', kind: 'rss', region: 'TH' },\n  { source: 'reddit-buyitforlife', url: 'https://www.reddit.com/r/BuyItForLife/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-bestproducts', url: 'https://www.reddit.com/r/BestProducts/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-frugal', url: 'https://www.reddit.com/r/Frugal/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-headphones', url: 'https://www.reddit.com/r/Headphones/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-cooking', url: 'https://www.reddit.com/r/Cooking/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-running', url: 'https://www.reddit.com/r/Running/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'reddit-shoes', url: 'https://www.reddit.com/r/Shoes/.json?limit=12', kind: 'json', parser: 'reddit' },\n  { source: 'hn-algolia-review', url: `https://hn.algolia.com/api/v1/search?query=review%20OR%20best%20OR%20deal&tags=story&numericFilters=created_at_i>${Math.floor(Date.now()/1000)-172800}`, kind: 'json', parser: 'hn' }\n];\nconst resolvedDomain = (link) => {\n  if (!link) return '';\n  try {\n    const { hostname } = new URL(link);\n    return hostname.replace(/^www\\./, '');\n  } catch (error) {\n    return link.replace(/^https?:\\/\\//, '').split(/[/?#]/)[0] || '';\n  }\n};\nconst results = [];\nfor (const src of sources) {\n  const stampPath = path.join(rateDir, `${src.source}.stamp`);\n  if (fs.existsSync(stampPath)) {\n    const last = Number(fs.readFileSync(stampPath, 'utf8')) || 0;\n    const diff = Date.now() - last;\n    if (diff < 30000) {\n      await wait(30000 - diff);\n    }\n  }\n  let response;\n  try {\n    response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: src.url,\n      json: src.kind === 'json',\n      headers: src.kind === 'json' ? { 'User-Agent': 'n8n-affiliate-mastermind/1.0' } : {}\n    });\n    fs.writeFileSync(stampPath, String(Date.now()), 'utf8');\n  } catch (error) {\n    diagnostics.push(`FETCH_FAIL:${src.source}`);\n    continue;\n  }\n  if (src.kind === 'rss') {\n    const xml = typeof response === 'string' ? response : response.body || '';\n    const itemMatches = Array.from(String(xml).matchAll(/<item>([\\s\\S]*?)<\\/item>/g));\n    for (const match of itemMatches) {\n      const block = match[1];\n      const title = (block.match(/<title><!\\[CDATA\\[(.*?)\\]\\]><\\/title>/) || block.match(/<title>([^<]+)<\\/title>/) || [null, '']).pop();\n      const link = (block.match(/<link>([^<]+)<\\/link>/) || [null, '']).pop();\n      if (!title || !link) continue;\n      const domain = resolvedDomain(link.trim());\n      results.push({ source: src.source, region: src.region || '', title: title.trim(), link: link.trim(), domain, priors, health, diagnostics, runId });\n    }\n  } else if (src.parser === 'reddit') {\n    const children = response?.data?.children || [];\n    for (const child of children.slice(0, 12)) {\n      const data = child?.data || {};\n      const title = data.title || '';\n      const outbound = data.url_overridden_by_dest || data.url || '';\n      const link = outbound || `https://www.reddit.com${data.permalink || ''}`;\n      if (!title || !link) continue;\n      const domain = resolvedDomain(outbound || link);\n      results.push({ source: src.source, title: title.trim(), link: link.trim(), domain, priors, health, diagnostics, runId });\n    }\n  } else if (src.parser === 'hn') {\n    const hits = Array.isArray(response?.hits) ? response.hits : [];\n    for (const hit of hits.slice(0, 40)) {\n      const title = hit.title || hit.story_title || '';\n      const link = hit.url || hit.story_url || '';\n      if (!title || !link) continue;\n      const domain = resolvedDomain(link);\n      results.push({ source: src.source, title: title.trim(), link: link.trim(), domain, priors, health, diagnostics, runId });\n    }\n  }\n}\nif (!results.length) {\n  return [{ json: { skip: true, reason: 'no_trends', health, diagnostics, priors, runId } }];\n}\nreturn results.map(entry => ({ json: entry }));\n"
       },
       "id": "b8407220-0abe-42bc-bab4-e4e942cd2e0f",
       "name": "Harvest Trends",
@@ -114,7 +114,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst seenPath = '/data/agency/datastore/seen_trends.txt';\nfs.mkdirSync(path.dirname(seenPath), { recursive: true });\nlet seen = new Set();\nlet existing = '';\nif (fs.existsSync(seenPath)) {\n  existing = fs.readFileSync(seenPath, 'utf8');\n  existing.split(/\n/).forEach(line => { if (line.trim()) seen.add(line.trim()); });\n}\nconst toPersist = [];\nconst fresh = [];\nfor (const item of items) {\n  const data = item.json || {};\n  const title = (data.title || '').toLowerCase().replace(/\\s+/g, ' ').trim();\n  const domain = (data.domain || '').toLowerCase().trim();\n  const norm = `${title}|${domain}`.replace(/[^a-z0-9| ]/g, '');\n  const hash = require('crypto').createHash('md5').update(norm).digest('hex');\n  if (seen.has(hash)) {\n    continue;\n  }\n  seen.add(hash);\n  toPersist.push(hash);\n  fresh.push({ ...data, hash });\n}\nif (toPersist.length) {\n  const tmpPath = `${seenPath}.tmp.${Date.now()}`;\n  const content = (existing ? existing.replace(/\n+$/,'') + '\n' : '') + toPersist.join('\n') + '\n';\n  fs.writeFileSync(tmpPath, content, 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmpPath, seenPath]);\n}\nreturn fresh.map(data => ({ json: data }));\n"
+        "functionCode": "\nconst fs = require('fs');\nconst path = require('path');\nconst crypto = require('crypto');\nconst seenPath = '/data/agency/datastore/seen_trends.txt';\nconst horizonMs = 7 * 24 * 60 * 60 * 1000;\nfs.mkdirSync(path.dirname(seenPath), { recursive: true });\nconst now = Date.now();\nconst seen = new Map();\nif (fs.existsSync(seenPath)) {\n  const content = fs.readFileSync(seenPath, 'utf8');\n  for (const line of content.split(/\n/)) {\n    if (!line.trim()) continue;\n    const [hash, ts] = line.split(',');\n    const tsNum = Number(ts || 0);\n    if (now - tsNum <= horizonMs) {\n      seen.set(hash, tsNum);\n    }\n  }\n}\nconst fresh = [];\nfor (const item of items) {\n  const data = item.json || {};\n  if (data.skip) {\n    fresh.push(data);\n    continue;\n  }\n  const title = (data.title || '').toLowerCase().replace(/\\s+/g, ' ').trim();\n  const domain = (data.domain || '').toLowerCase().trim();\n  const norm = `${title}|${domain}`.replace(/[^a-z0-9| ]/g, '');\n  const hash = crypto.createHash('md5').update(norm).digest('hex');\n  if (seen.has(hash)) {\n    continue;\n  }\n  seen.set(hash, now);\n  fresh.push({ ...data, hash, dedupHash: hash, dedupTs: new Date(now).toISOString() });\n}\nconst lines = [];\nfor (const [hash, ts] of seen.entries()) {\n  lines.push(`${hash},${ts}`);\n}\nconst tmp = `${seenPath}.tmp.${now}`;\nfs.writeFileSync(tmp, lines.sort().join('\n') + '\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, seenPath]);\nif (!fresh.length) {\n  return [{ json: { skip: true, reason: 'no_fresh_trends', dedupTs: new Date(now).toISOString() } }];\n}\nreturn fresh.map(data => ({ json: data }));\n"
       },
       "id": "0701371f-4c75-4030-8676-97c4349b2a9a",
       "name": "Deduplicate Trends",
@@ -127,7 +127,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst csvPath = '/data/agency/datastore/trends.csv';\nfs.mkdirSync(path.dirname(csvPath), { recursive: true });\nconst header = 'ts,source,title,link,domain\\n';\nconst lines = [];\nfor (const item of items) {\n  const data = item.json || {};\n  const ts = new Date().toISOString();\n  const escapedTitle = (data.title || '').replace(/\"/g, '\"\"');\n  const escapedLink = (data.link || '').replace(/\"/g, '\"\"');\n  const domain = (data.domain || '').replace(/\"/g, '');\n  lines.push(`${ts},${data.source||''},\"${escapedTitle}\",\"${escapedLink}\",${domain}`);\n}\nif (!lines.length) {\n  return items;\n}\nlet existing = '';\nif (fs.existsSync(csvPath)) {\n  existing = fs.readFileSync(csvPath, 'utf8');\n}\nlet output;\nif (existing.trim()) {\n  output = existing.replace(/\n+$/, '') + '\n' + lines.join('\n') + '\n';\n} else {\n  output = header + lines.join('\n') + '\n';\n}\nconst tmp = `${csvPath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, output, 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, csvPath]);\nreturn items;\n"
+        "functionCode": "\nconst fs = require('fs');\nconst path = require('path');\nconst csvPath = '/data/agency/datastore/trends.csv';\nfs.mkdirSync(path.dirname(csvPath), { recursive: true });\nconst header = 'ts,source,title,link,domain,hash\n';\nconst lines = [];\nfor (const item of items) {\n  const data = item.json || {};\n  if (data.skip) continue;\n  const ts = new Date().toISOString();\n  const escapedTitle = (data.title || '').replace(/\"/g, '\"\"');\n  const escapedLink = (data.link || '').replace(/\"/g, '\"\"');\n  const domain = (data.domain || '').replace(/\"/g, '');\n  lines.push(`${ts},${data.source||''},\"${escapedTitle}\",\"${escapedLink}\",${domain},${data.hash || data.dedupHash || ''}`);\n}\nif (!lines.length) {\n  return items;\n}\nlet existing = '';\nif (fs.existsSync(csvPath)) {\n  existing = fs.readFileSync(csvPath, 'utf8');\n}\nconst tmp = `${csvPath}.tmp.${Date.now()}`;\nconst base = existing.trim() ? existing.replace(/\n+$/, '') + '\n' : header;\nfs.writeFileSync(tmp, base + lines.join('\n') + '\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, csvPath]);\nreturn items;\n"
       },
       "id": "eea184e1-e8fc-4c20-b7a3-59a322526efc",
       "name": "Persist Trends",
@@ -140,7 +140,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst lines = [];\nfor (const item of items) {\n  const data = item.json || {};\n  const payload = {\n    ts: new Date().toISOString(),\n    event: 'QUEUE_TREND',\n    slug: data.hash,\n    meta: { source: data.source, title: data.title, link: data.link }\n  };\n  lines.push(JSON.stringify(payload));\n}\nif (lines.length) {\n  const tmp = `${logPath}.tmp.${Date.now()}`;\n  const existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';\n  const output = (existing ? existing.replace(/\n+$/, '') + '\n' : '') + lines.join('\n') + '\n';\n  fs.writeFileSync(tmp, output, 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\n}\nreturn items;\n"
+        "functionCode": "\nconst fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst lines = [];\nfor (const item of items) {\n  const data = item.json || {};\n  if (data.skip) continue;\n  const payload = {\n    ts: new Date().toISOString(),\n    event: 'QUEUE_TREND',\n    slug: data.hash || data.dedupHash || data.link,\n    meta: { source: data.source, title: data.title, link: data.link, domain: data.domain }\n  };\n  lines.push(JSON.stringify(payload));\n}\nif (lines.length) {\n  const tmp = `${logPath}.tmp.${Date.now()}`;\n  const existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\n+$/, '') + '\n' : '';\n  fs.writeFileSync(tmp, existing + lines.join('\n') + '\n', 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\n}\nreturn items;\n"
       },
       "id": "051fd7ad-93e1-4fca-a6e2-a6032bfe6ae0",
       "name": "Log Trend Intake",
@@ -153,7 +153,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const crypto = require('crypto');\nreturn items.map(item => {\n  const data = item.json || {};\n  const slugBase = data.title || 'idea';\n  const slug = slugBase.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || crypto.randomBytes(4).toString('hex');\n  const priors = data.priors || {};\n  return {\n    json: {\n      ...data,\n      slug,\n      ideaPrompt: JSON.stringify({\n        model: data?.model || (process.env.OLLAMA_MODEL || 'llama3.1'),\n        prompt: `Output STRICT MINIFIED JSON only. SCHEMA:{\"title\":string,\"hook\":string,\"script\":{\"beats\":[{\"t\":number,\"line\":string}]},\"seo\":{\"title\":string,\"description\":string,\"keywords\":string[]},\"hashtags\":string[],\"assets\":{\"bg_keywords\":string[],\"tts_voice\":string},\"affiliate\":{\"cta\":string,\"utm_campaign\":string},\"archetype\":\"commodity|mid|high|subscription\"} CONSTRAINTS:120-180s, lines<=14 words, monetizable evergreen angle, no external links. CONTEXT:trendTitle=\"${data.title}\";source=\"${data.source}\";url=\"${data.link}\";persona=blunt technical. PRIORS=${JSON.stringify(priors)}. Bias selection toward (niche, archetype) with PRIORS.weight>=0.12; otherwise uniform. RETURN ONLY JSON.`,\n        stream: false,\n        options: { temperature: 0.7 }\n      })\n    }\n  };\n});\n"
+        "functionCode": "\nconst crypto = require('crypto');\nreturn items.map(item => {\n  const data = item.json || {};\n  if (data.skip) {\n    return { json: { ...data } };\n  }\n  const slugBase = data.title || 'idea';\n  const slug = slugBase.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || crypto.randomBytes(4).toString('hex');\n  const priors = data.priors || {};\n  const body = {\n    model: data?.model || (process.env.OLLAMA_MODEL || 'llama3.1'),\n    prompt: `Output STRICT MINIFIED JSON only. SCHEMA:{\"title\":string,\"hook\":string,\"script\":{\"beats\":[{\"t\":number,\"line\":string}]},\"seo\":{\"title\":string,\"description\":string,\"keywords\":string[]},\"hashtags\":string[],\"assets\":{\"bg_keywords\":string[],\"tts_voice\":string},\"affiliate\":{\"cta\":string,\"utm_campaign\":string},\"archetype\":\"commodity|mid|high|subscription\"} CONSTRAINTS:120-180s, lines<=14 words, monetizable evergreen angle, no external links. CONTEXT:trendTitle=\"${data.title}\";source=\"${data.source}\";url=\"${data.link}\";persona=blunt technical. PRIORS=${JSON.stringify(priors)}. Bias selection toward (niche, archetype) with PRIORS.weight>=0.12; otherwise uniform. RETURN ONLY JSON.`,\n    stream: false,\n    options: { temperature: 0.7, seed: 1337 }\n  };\n  return {\n    json: {\n      ...data,\n      slug,\n      ideaPrompt: JSON.stringify(body)\n    }\n  };\n});\n"
       },
       "id": "fb0580bc-07d6-4eae-99b4-ae41bf5f98d3",
       "name": "Build Ideation Prompt",
@@ -172,7 +172,7 @@
         "options": {
           "timeout": 120000
         },
-        "bodyParametersJson": "={{ $json.ideaPrompt }}"
+        "bodyParametersJson": "={{ $json.skip ? null : $json.ideaPrompt }}"
       },
       "id": "942b1d70-9070-4745-85c9-7a84c3310e60",
       "name": "Ollama Ideation",
@@ -185,7 +185,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const raw = $json.response || $json.body || $json.data || '';\nconst cleaned = String(raw).replace(/```json|```/g, '').trim();\nlet obj;\ntry {\n  obj = JSON.parse(cleaned);\n} catch (error) {\n  return [{ json: { valid: false, err: 'parse', raw: cleaned, idea: null, slug: $json.slug } }];\n}\nfunction req(cond, field) { if (!cond) throw new Error(field); }\ntry {\n  req(typeof obj.title === 'string' && obj.title.length > 4, 'title');\n  req(Array.isArray(obj.script?.beats) && obj.script.beats.length >= 8, 'beats');\n  for (const beat of obj.script.beats) {\n    req(typeof beat.t === 'number', 'beat.t');\n    req(typeof beat.line === 'string' && beat.line.length > 0, 'beat.line');\n  }\n  req(typeof obj.archetype === 'string', 'archetype');\n  return [{ json: { valid: true, idea: obj, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n} catch (error) {\n  return [{ json: { valid: false, err: 'schema', detail: String(error), raw: cleaned, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n}\n"
+        "functionCode": "if ($json.skip) {\n  return [{ json: { skip: true, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n}\nconst fs = require('fs');\nconst path = require('path');\nconst raw = $json.response || $json.body || $json.data || '';\nconst cleaned = String(raw).replace(/```json|```/g, '').trim();\nconst quotaPath = '/data/agency/datastore/quota_log.csv';\nfs.mkdirSync(path.dirname(quotaPath), { recursive: true });\nconst body = (() => { try { return JSON.parse($json.ideaPrompt || '{}'); } catch { return {}; } })();\nconst prompt = body.prompt || '';\nconst evalCount = Number($json.eval_count || $json.evalCount || 0);\nconst tmpQuota = `${quotaPath}.tmp.${Date.now()}`;\nconst line = `${new Date().toISOString()},ollama_ideation,${$json.slug || ''},${prompt.length},${cleaned.length},${evalCount}\\n`;\nconst existingQuota = fs.existsSync(quotaPath) ? fs.readFileSync(quotaPath, 'utf8') : 'ts,event,slug,prompt_chars,response_chars,eval_count\\n';\nfs.writeFileSync(tmpQuota, existingQuota.replace(/\\n+$/, '') + '\\n' + line, 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmpQuota, quotaPath]);\nlet obj;\ntry {\n  obj = JSON.parse(cleaned);\n} catch (error) {\n  return [{ json: { valid: false, err: 'parse', raw: cleaned, idea: null, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n}\nfunction req(cond, field) { if (!cond) throw new Error(field); }\ntry {\n  req(typeof obj.title === 'string' && obj.title.length > 4, 'title');\n  req(Array.isArray(obj.script?.beats) && obj.script.beats.length >= 8, 'beats');\n  for (const beat of obj.script.beats) {\n    req(typeof beat.t === 'number', 'beat.t');\n    req(typeof beat.line === 'string' && beat.line.length > 0, 'beat.line');\n  }\n  req(typeof obj.archetype === 'string', 'archetype');\n  return [{ json: { valid: true, idea: obj, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n} catch (error) {\n  return [{ json: { valid: false, err: 'schema', detail: String(error), raw: cleaned, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n}\n"
       },
       "id": "14936949-5ed4-4abe-a112-9814f83425b8",
       "name": "Validate Idea JSON",
@@ -218,7 +218,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const error = $json.err || 'parse';\nconst raw = $json.raw || '';\nreturn [{ json: { slug: $json.slug, repairBody: JSON.stringify({ model: process.env.OLLAMA_MODEL || 'llama3.1', prompt: `Repair JSON to match schema. Previous error: ${error}. RAW:${raw}`, stream: false, options: { temperature: 0.3 } }), health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n"
+        "functionCode": "\nif ($json.skip) {\n  return [{ json: { skip: true, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n}\nconst error = $json.err || $json.detail || 'parse';\nconst raw = $json.raw || '';\nconst body = {\n  model: process.env.OLLAMA_MODEL || 'llama3.1',\n  prompt: `Repair JSON to match schema {\"title\":string,\"hook\":string,\"script\":{\"beats\":[{\"t\":number,\"line\":string}]},\"seo\":{\"title\":string,\"description\":string,\"keywords\":string[]},\"hashtags\":string[],\"assets\":{\"bg_keywords\":string[],\"tts_voice\":string},\"affiliate\":{\"cta\":string,\"utm_campaign\":string},\"archetype\":\"commodity|mid|high|subscription\"}. Keep runtime 120-180s, <=14 words per line, evergreen monetization. Context title=${$json.source || ''} link=${$json.link || ''}. Previous error: ${error}. RAW:${raw}`,\n  stream: false,\n  options: { temperature: 0.3, seed: 1337 }\n};\nreturn [{ json: { slug: $json.slug, repairBody: JSON.stringify(body), health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n"
       },
       "id": "3421da9a-bd8b-4b4a-9d78-eda3418253b1",
       "name": "Build Repair Prompt",
@@ -237,7 +237,7 @@
         "options": {
           "timeout": 120000
         },
-        "bodyParametersJson": "={{ $json.repairBody }}"
+        "bodyParametersJson": "={{ $json.skip ? null : $json.repairBody }}"
       },
       "id": "f241f177-7e08-4f75-8e4f-0a351abf2a6b",
       "name": "Ollama Repair",
@@ -250,7 +250,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const raw = $json.response || $json.body || '';\nconst cleaned = String(raw).replace(/```json|```/g, '').trim();\nlet obj;\ntry {\n  obj = JSON.parse(cleaned);\n} catch (error) {\n  return [{ json: { valid: false, err: 'repair-parse', raw: cleaned, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n}\nfunction req(cond, field) { if (!cond) throw new Error(field); }\ntry {\n  req(typeof obj.title === 'string' && obj.title.length > 4, 'title');\n  req(Array.isArray(obj.script?.beats) && obj.script.beats.length >= 8, 'beats');\n  for (const beat of obj.script.beats) {\n    req(typeof beat.t === 'number', 'beat.t');\n    req(typeof beat.line === 'string' && beat.line.length > 0, 'beat.line');\n  }\n  req(typeof obj.archetype === 'string', 'archetype');\n  return [{ json: { valid: true, idea: obj, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n} catch (error) {\n  return [{ json: { valid: false, err: 'repair-schema', detail: String(error), raw: cleaned, slug: $json.slug, health: $json.health, priors: $json.priors, source: $json.source, link: $json.link } }];\n}\n"
+        "functionCode": "if ($json.skip) {\n  return [{ json: { valid: false, err: 'skip', slug: $json.slug, raw: '', health: $json.health, priors: $json.priors } }];\n}\nconst raw = $json.response || $json.body || $json.data || '';\nconst cleaned = String(raw).replace(/```json|```/g, '').trim();\nlet obj;\ntry {\n  obj = JSON.parse(cleaned);\n} catch (error) {\n  return [{ json: { valid: false, err: 'parse', raw: cleaned, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n}\nfunction req(cond, field) { if (!cond) throw new Error(field); }\ntry {\n  req(typeof obj.title === 'string' && obj.title.length > 4, 'title');\n  req(Array.isArray(obj.script?.beats) && obj.script.beats.length >= 8, 'beats');\n  for (const beat of obj.script.beats) {\n    req(typeof beat.t === 'number', 'beat.t');\n    req(typeof beat.line === 'string' && beat.line.length > 0, 'beat.line');\n  }\n  req(typeof obj.archetype === 'string', 'archetype');\n  return [{ json: { valid: true, idea: obj, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n} catch (error) {\n  return [{ json: { valid: false, err: 'schema', detail: String(error), raw: cleaned, slug: $json.slug, source: $json.source, link: $json.link, health: $json.health, priors: $json.priors } }];\n}\n"
       },
       "id": "f2d2243e-7e50-486a-ba66-12050d71280f",
       "name": "Validate Repair",
@@ -283,7 +283,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nfs.mkdirSync('/data/agency/dlq', { recursive: true });\nconst slug = $json.slug || `idea-${Date.now()}`;\nconst filePath = `/data/agency/dlq/ideas-${slug}.json`;\nconst tmp = `${filePath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ ts: new Date().toISOString(), err: $json.err || $json.detail || 'unknown', raw: $json.raw || '' }) + '\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, filePath]);\nreturn [{ json: { dlq: filePath, slug } }];\n"
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nfs.mkdirSync('/data/agency/dlq', { recursive: true });\nconst slug = $json.slug || `idea-${Date.now()}`;\nconst filePath = `/data/agency/dlq/ideas-${slug}.json`;\nconst tmp = `${filePath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ ts: new Date().toISOString(), err: $json.err || $json.detail || 'unknown', raw: $json.raw || '' }) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, filePath]);\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = { ts: new Date().toISOString(), event: 'IDEA_DLQ', slug, meta: { path: filePath } };\nconst logTmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(logTmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [logTmp, logPath]);\nreturn [{ json: { dlq: filePath, slug } }];\n"
       },
       "id": "0500a1cd-645e-45c0-a3e2-1f3ed02a8112",
       "name": "Write DLQ",
@@ -309,7 +309,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst idea = $json.idea;\nconst queuePath = `/data/agency/queue/ideas/${slug}.json`;\nconst tmp = `${queuePath}.part.${Date.now()}`;\nfs.mkdirSync(path.dirname(queuePath), { recursive: true });\nfs.writeFileSync(tmp, JSON.stringify({ ...idea, source: $json.source, link: $json.link, priors: $json.priors }, null, 0), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, queuePath]);\nreturn [{ json: { ...$json, ideaPath: queuePath } }];\n"
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nif ($json.skip) {\n  return [{ json: $json }];\n}\nconst slug = $json.slug;\nconst idea = $json.idea;\nconst queuePath = `/data/agency/queue/ideas/${slug}.json`;\nconst tmp = `${queuePath}.part.${Date.now()}`;\nfs.mkdirSync(path.dirname(queuePath), { recursive: true });\nfs.writeFileSync(tmp, JSON.stringify({ ...idea, source: $json.source, link: $json.link, priors: $json.priors }, null, 0), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, queuePath]);\nreturn [{ json: { ...$json, ideaPath: queuePath } }];\n"
       },
       "id": "192e9a83-064e-42d9-8ff1-c47abc7aca95",
       "name": "Queue Idea",
@@ -322,7 +322,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = { ts: new Date().toISOString(), event: 'QUEUE_IDEA', slug: $json.slug, meta: $json.idea };\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';\nconst output = (existing ? existing.replace(/\n+$/, '') + '\n' : '') + JSON.stringify(payload) + '\n';\nfs.writeFileSync(tmp, output, 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+        "functionCode": "if ($json.skip) {\n  return items;\n}\nconst fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = { ts: new Date().toISOString(), event: 'QUEUE_IDEA', slug: $json.slug, meta: $json.idea };\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
       },
       "id": "e426493f-1c41-4372-b46f-b96391020db8",
       "name": "Log Idea Event",
@@ -355,7 +355,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst metaPath = `/data/agency/queue/youtube/${slug}.meta.json`;\nfs.mkdirSync(path.dirname(metaPath), { recursive: true });\nconst tmp = `${metaPath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ slug, health: false, idea: $json.idea, ts: new Date().toISOString() }), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, metaPath]);\nreturn [{ json: { ...$json, metaPath } }];\n"
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst metaPath = `/data/agency/queue/youtube/${slug}.meta.json`;\nfs.mkdirSync(path.dirname(metaPath), { recursive: true });\nconst tmp = `${metaPath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ slug, health: false, idea: $json.idea, ts: new Date().toISOString(), reason: 'health_false' }), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, metaPath]);\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = { ts: new Date().toISOString(), event: 'RENDER_SKIPPED', slug, meta: { reason: 'health_false', meta: metaPath } };\nconst logTmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(logTmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [logTmp, logPath]);\nreturn [{ json: { ...$json, metaPath } }];\n"
       },
       "id": "0c3ea71b-b2ae-4980-a689-3df6e240d407",
       "name": "Write Queue Metadata",
@@ -368,7 +368,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst { spawnSync } = require('child_process');\nconst slug = $json.slug;\nconst runsDir = '/data/agency/runs';\nconst queueDir = '/data/agency/queue/youtube';\nfs.mkdirSync(runsDir, { recursive: true });\nfs.mkdirSync(queueDir, { recursive: true });\nconst scriptLines = ($json.idea?.script?.beats || []).map(beat => beat.line).join(' ');\nconst wavPath = `${runsDir}/${slug}.wav`;\nconst pngPath = `${runsDir}/${slug}.png`;\nconst mp4Path = `${queueDir}/${slug}.mp4`;\nconst titlePath = `${queueDir}/${slug}.title.txt`;\nconst descPath = `${queueDir}/${slug}.desc.txt`;\nconst tagsPath = `${queueDir}/${slug}.tags.txt`;\nconst metaPath = `${queueDir}/${slug}.meta.json`;\nfunction run(cmd, args, input) {\n  const res = spawnSync(cmd, args, { encoding: 'utf8', input });\n  if (res.status !== 0) {\n    const logPath = '/data/agency/logs/render_fail.jsonl';\n    fs.mkdirSync(path.dirname(logPath), { recursive: true });\n    const payload = { ts: new Date().toISOString(), slug, cmd: [cmd, ...args].join(' '), exit: res.status, stderr: (res.stderr || '').split(/\n/).slice(-5).join('\n') };\n    const tmp = `${logPath}.tmp.${Date.now()}`;\n    const existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';\n    const output = (existing ? existing.replace(/\n+$/, '') + '\n' : '') + JSON.stringify(payload) + '\n';\n    fs.writeFileSync(tmp, output, 'utf8');\n    require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\n    throw new Error(`render-fail:${cmd}`);\n  }\n}\nrun('espeak-ng', ['-v', 'en-us', '-s', '175', '-p', '35', '-w', wavPath, scriptLines]);\nrun('magick', ['-size', '1080x1920', 'xc:#0f0f0f', '-gravity', 'Center', '-pointsize', '64', '-fill', 'white', '-annotate', '+0+0', $json.idea?.title || ''], pngPath);\nrun('ffmpeg', ['-y', '-loop', '1', '-i', pngPath, '-i', wavPath, '-c:v', 'libx264', '-tune', 'stillimage', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-r', '30', '-pix_fmt', 'yuv420p', '-vf', 'scale=1080:1920', mp4Path]);\nfs.writeFileSync(titlePath, ($json.idea?.seo?.title || $json.idea?.title || ''), 'utf8');\nfs.writeFileSync(descPath, ($json.idea?.seo?.description || ''), 'utf8');\nfs.writeFileSync(tagsPath, ($json.idea?.seo?.keywords || []).join(','), 'utf8');\nconst tmpMeta = `${metaPath}.tmp.${Date.now()}`;\nfs.writeFileSync(tmpMeta, JSON.stringify({ slug, health: true, ts: new Date().toISOString(), idea: $json.idea }), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmpMeta, metaPath]);\nreturn [{ json: { ...$json, wavPath, pngPath, mp4Path, titlePath, descPath, tagsPath, metaPath } }];\n"
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst { spawnSync } = require('child_process');\nif ($json.skip) {\n  return [{ json: { ...$json, renderOk: false, renderError: 'skip' } }];\n}\nconst slug = $json.slug;\nconst runsDir = '/data/agency/runs';\nconst queueDir = '/data/agency/queue/youtube';\nfs.mkdirSync(runsDir, { recursive: true });\nfs.mkdirSync(queueDir, { recursive: true });\nconst scriptLines = ($json.idea?.script?.beats || []).map(beat => beat.line).join(' ');\nconst wavPath = path.join(runsDir, `${slug}.wav`);\nconst pngPath = path.join(runsDir, `${slug}.png`);\nconst mp4Path = path.join(queueDir, `${slug}.mp4`);\nconst titlePath = path.join(queueDir, `${slug}.title.txt`);\nconst descPath = path.join(queueDir, `${slug}.desc.txt`);\nconst tagsPath = path.join(queueDir, `${slug}.tags.txt`);\nconst metaPath = path.join(queueDir, `${slug}.meta.json`);\nconst logPath = '/data/agency/logs/render_fail.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst appendLog = (payload) => {\n  const tmp = `${logPath}.tmp.${Date.now()}`;\n  const existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\n  fs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\n};\nconst appendEvent = (event, meta = {}) => {\n  const eventsPath = '/data/agency/logs/events.jsonl';\n  fs.mkdirSync(path.dirname(eventsPath), { recursive: true });\n  const payload = { ts: new Date().toISOString(), event, slug, meta };\n  const tmp = `${eventsPath}.tmp.${Date.now()}`;\n  const existing = fs.existsSync(eventsPath) ? fs.readFileSync(eventsPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\n  fs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, eventsPath]);\n};\nconst runCommand = (cmd, args, input, label, tmpPath, finalPath) => {\n  const res = spawnSync(cmd, args, { encoding: 'utf8', input });\n  if (res.status !== 0) {\n    appendLog({ ts: new Date().toISOString(), slug, cmd: [cmd, ...args].join(' '), exit: res.status, stderr: (res.stderr || '').split(/\\n/).slice(-10).join('\\n') });\n    appendEvent('RENDER_FAIL', { stage: label, exit: res.status });\n    if (tmpPath && fs.existsSync(tmpPath)) fs.rmSync(tmpPath, { force: true });\n    return { ok: false, error: `${label}_fail` };\n  }\n  if (tmpPath && finalPath) {\n    require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmpPath, finalPath]);\n  }\n  return { ok: true };\n};\ntry {\n  const tmpWav = `${wavPath}.tmp.${Date.now()}`;\n  const wavRes = runCommand('espeak-ng', ['-v', 'en-us', '-s', '175', '-p', '35', '-w', tmpWav], scriptLines, 'tts', tmpWav, wavPath);\n  if (!wavRes.ok) return [{ json: { ...$json, renderOk: false, renderError: wavRes.error } }];\n  const tmpPng = `${pngPath}.tmp.${Date.now()}`;\n  const titleText = $json.idea?.title || '';\n  const pngRes = runCommand('magick', ['-size', '1080x1920', 'xc:#0f0f0f', '-gravity', 'Center', '-pointsize', '64', '-fill', 'white', '-annotate', '+0+0', titleText, tmpPng], null, 'slate', tmpPng, pngPath);\n  if (!pngRes.ok) return [{ json: { ...$json, renderOk: false, renderError: pngRes.error } }];\n  const tmpMp4 = `${mp4Path}.tmp.${Date.now()}`;\n  const ffArgs = ['-y', '-loop', '1', '-i', pngPath, '-i', wavPath, '-c:v', 'libx264', '-tune', 'stillimage', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-r', '30', '-pix_fmt', 'yuv420p', '-vf', 'scale=1080:1920', tmpMp4];\n  const mp4Res = runCommand('ffmpeg', ffArgs, null, 'ffmpeg', tmpMp4, mp4Path);\n  if (!mp4Res.ok) return [{ json: { ...$json, renderOk: false, renderError: mp4Res.error } }];\n  const writeAtomic = (file, content) => {\n    const tmp = `${file}.tmp.${Date.now()}`;\n    fs.writeFileSync(tmp, content, 'utf8');\n    require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, file]);\n  };\n  writeAtomic(titlePath, $json.idea?.seo?.title || $json.idea?.title || '');\n  writeAtomic(descPath, $json.idea?.seo?.description || '');\n  writeAtomic(tagsPath, ($json.idea?.seo?.keywords || []).join(','));\n  writeAtomic(metaPath, JSON.stringify({ slug, health: true, ts: new Date().toISOString(), idea: $json.idea }, null, 0));\n  appendEvent('RENDER_COMPLETE', { mp4: mp4Path });\n  return [{ json: { ...$json, wavPath, pngPath, mp4Path, titlePath, descPath, tagsPath, metaPath, renderOk: true } }];\n} catch (error) {\n  appendLog({ ts: new Date().toISOString(), slug, cmd: 'render_media', exit: -1, stderr: String(error) });\n  appendEvent('RENDER_FAIL', { stage: 'exception', error: String(error) });\n  const tmp = `${metaPath}.tmp.${Date.now()}`;\n  fs.writeFileSync(tmp, JSON.stringify({ slug, ts: new Date().toISOString(), idea: $json.idea, error: String(error) }), 'utf8');\n  require('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, metaPath]);\n  return [{ json: { ...$json, renderOk: false, renderError: String(error), metaPath } }];\n}\n"
       },
       "id": "3b1fbff2-7f20-4e0c-b5bc-d6dba7c27bbf",
       "name": "Render Media",
@@ -384,7 +384,7 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ $env.YT_UPLOAD_ENABLED === '1' }}",
+              "value1": "={{ $env.YT_UPLOAD_ENABLED === \"1\" }}",
               "operation": "isTrue"
             }
           ]
@@ -393,15 +393,15 @@
       "id": "e272a115-3e82-4b17-b092-8b324fcccb95",
       "name": "IF YT Upload Enabled",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 1.0,
       "position": [
-        3320,
-        120
+        2840,
+        40
       ]
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst marker = `${$json.mp4Path || ''}.queue_only`;\nif ($json.mp4Path) {\n  fs.closeSync(fs.openSync(marker, 'w'));\n}\nreturn items;\n"
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst marker = `${$json.mp4Path || ''}.queue_only`;\nif (!marker || !$json.mp4Path) {\n  return items;\n}\nconst tmp = `${marker}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ ts: new Date().toISOString(), slug: $json.slug || null, reason: 'upload_gate' }), 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, marker]);\nreturn items;\n"
       },
       "id": "ce6f54a5-6a7d-4947-964c-346b570d2987",
       "name": "Queue Only Marker",
@@ -414,20 +414,25 @@
     },
     {
       "parameters": {
-        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst failPath = `${$json.mp4Path || ''}.retry1.fail`;\ntry {\n  throw new Error('UPLOAD_NOT_IMPLEMENTED');\n} catch (error) {\n  fs.writeFileSync(failPath, `Upload failed: ${error.message}`, 'utf8');\n}\nreturn items;\n"
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst slug = $json.slug;\nconst failPath = `${$json.mp4Path || ''}.retry1.fail`;\ntry {\n  throw new Error('UPLOAD_NOT_IMPLEMENTED');\n} catch (error) {\n  fs.writeFileSync(failPath, `Upload failed: ${error.message}`, 'utf8');\n}\nreturn items;\n",
+        "command": "set -euo pipefail\nmp4=\"{{$json.mp4Path || ''}}\"\nslug=\"{{$json.slug || ''}}\"\nlog=/data/agency/logs/events.jsonl\nretryFlag=\"${mp4}.retry1.fail\"\ncmd=\"${YT_UPLOAD_COMMAND:-}\"\nif [ -z \"$cmd\" ] || [ ! -f \"$mp4\" ]; then\n  tmp=$(mktemp)\nprintf '{\"ts\":\"%s\",\"event\":\"YTU_UPLOAD_SKIP\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"$slug\" >\"$tmp\"\n  /usr/local/bin/atomic-mv \"$tmp\" \"$log\"\n  exit 0\nfi\nattempt=0\nmax=2\nwhile [ $attempt -lt $max ]; do\n  attempt=$((attempt+1))\n  if bash -lc \"$cmd\"; then\n    tmp=$(mktemp)\n    printf '{\"ts\":\"%s\",\"event\":\"YTU_UPLOAD_OK\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"$slug\" >\"$tmp\"\n    /usr/local/bin/atomic-mv \"$tmp\" \"$log\"\n    rm -f \"$retryFlag\"\n    exit 0\n  fi\n  sleep $((attempt*5))\ndone\ntmp=$(mktemp)\nprintf '{\"ts\":\"%s\",\"event\":\"YTU_UPLOAD_FAIL\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"$slug\" >\"$tmp\"\n/usr/local/bin/atomic-mv \"$tmp\" \"$log\"\ntouch \"$retryFlag\"\nexit 0\n"
       },
       "id": "6e81b13d-08f2-434a-bbd4-494f20ce55a6",
-      "name": "YouTube Upload Stub",
+      "name": "YouTube Upload",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
         3560,
         40
-      ]
+      ],
+      "options": {
+        "shell": "/bin/bash",
+        "continueOnFail": true
+      }
     },
     {
       "parameters": {
-        "command": "rm -f /data/agency/locks/content.lock /data/agency/locks/content.lock.pid\n",
+        "command": "\nset -euo pipefail\nlock=/data/agency/locks/content.lock\nholder=/data/agency/locks/content.lock.holder\npidfile=/data/agency/locks/content.lock.pid\nif [ -f \"$holder\" ]; then\n  bg=$(cat \"$holder\" 2>/dev/null || true)\n  rm -f \"$holder\"\n  if [ -n \"$bg\" ]; then\n    if kill -0 \"$bg\" 2>/dev/null; then\n      wait \"$bg\" 2>/dev/null || true\n    fi\n  fi\nfi\nrm -f \"$pidfile\"\nrm -f \"$lock\"\necho RELEASED\n",
         "options": {
           "shell": "/bin/bash"
         }
@@ -440,10 +445,525 @@
         3800,
         160
       ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyHour"
+          }
+        ]
+      },
+      "id": "1d0f14fa-c576-4dd8-b759-32b7d6a4330e",
+      "name": "Production Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.0,
+      "position": [
+        -2600,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.skip === true }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "eab6ddae-7f04-432d-a88b-61bae6c25ecd",
+      "name": "IF Harvest Empty",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [
+        -200,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'NO_TRENDS',\n  slug: $json.runId || null,\n  meta: { diagnostics: $json.diagnostics || [], health: $json.health === true }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn [{ json: { skip: true, reason: $json.reason || 'no_trends', runId: $json.runId || null, health: $json.health === true } }];\n"
+      },
+      "id": "4d073731-ad00-4a2b-abe0-09cb5d753b66",
+      "name": "Log Empty Harvest",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        80,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.skip === true }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "b8b4ab50-6d0a-4ff7-9b59-0257a849010a",
+      "name": "IF Fresh Items",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [
+        260,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'NO_FRESH_TRENDS',\n  slug: $json.runId || null,\n  meta: { reason: $json.reason || 'no_fresh_trends' }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn [{ json: { skip: true, reason: $json.reason || 'no_fresh_trends' } }];\n"
+      },
+      "id": "5f478000-68e1-4edd-9c70-7e309b879059",
+      "name": "Log No Fresh Trends",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        520,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "if (!items.length) {\n  return [{ json: { skip: true, reason: 'no_valid_ideas', reportedAt: new Date().toISOString() } }];\n}\nreturn items;\n"
+      },
+      "id": "3a96143f-f6e6-49f0-8dc0-a9c113b6c618",
+      "name": "Ensure Idea Output",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        1260,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.skip === true }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "489557be-bc34-4be1-b1cd-52a228dc0418",
+      "name": "IF Idea Skip",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [
+        1480,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'NO_IDEA',\n  slug: $json.slug || null,\n  meta: { reason: $json.reason || 'no_valid_ideas' }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn [{ json: { skip: true, reason: $json.reason || 'no_valid_ideas' } }];\n"
+      },
+      "id": "01b679cb-0cbd-41ab-ab0e-0abb9e7b1517",
+      "name": "Log No Idea",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        1740,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.renderOk === true }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "55b2623f-4e20-453a-8462-1811f9d2b753",
+      "name": "IF Render OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [
+        2300,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'RENDER_FAIL',\n  slug: $json.slug || null,\n  meta: { error: $json.renderError || 'render_failed' }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn [{ json: $json }];\n"
+      },
+      "id": "1997cbdb-9e7b-44cf-adc8-6e990eeb9bc2",
+      "name": "Render Failure Event",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        2560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'RENDER_SUCCESS',\n  slug: $json.slug || null,\n  meta: { mp4: $json.mp4Path || null }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+      },
+      "id": "54dbe043-9f42-4136-bb92-37254861a67b",
+      "name": "Log Render Success",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        2560,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $env.BSKY_ENABLED === \"1\" }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "f0b48ffe-0bc5-413b-a187-91222743c577",
+      "name": "IF Bluesky Upload Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [
+        2840,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nmp4=\"{{$json.mp4Path || ''}}\"\ncmd=\"${BSKY_UPLOAD_COMMAND:-}\"\nlog=/data/agency/logs/events.jsonl\nqueueDir=/data/agency/queue/bsky\nmkdir -p \"$queueDir\"\nif [ -z \"$cmd\" ] || [ ! -f \"$mp4\" ]; then\n  tmp=$(mktemp)\nprintf '{\"ts\":\"%s\",\"event\":\"BSKY_UPLOAD_SKIP\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"{{$json.slug || ''}}\" >\"$tmp\"\n  /usr/local/bin/atomic-mv \"$tmp\" \"$log\"\n  exit 0\nfi\nattempt=0\nmax=2\nwhile [ $attempt -lt $max ]; do\n  attempt=$((attempt+1))\n  if bash -lc \"$cmd\"; then\n    tmp=$(mktemp)\n    printf '{\"ts\":\"%s\",\"event\":\"BSKY_UPLOAD_OK\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"{{$json.slug || ''}}\" >\"$tmp\"\n    /usr/local/bin/atomic-mv \"$tmp\" \"$log\"\n    exit 0\n  fi\n  sleep $((attempt*5))\ndone\ntmp=$(mktemp)\nprintf '{\"ts\":\"%s\",\"event\":\"BSKY_UPLOAD_FAIL\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"{{$json.slug || ''}}\" >\"$tmp\"\n/usr/local/bin/atomic-mv \"$tmp\" \"$log\"\nexit 0\n"
+      },
+      "id": "66634944-cf43-4687-af9e-378d7fa1b71e",
+      "name": "Bluesky Upload",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        3100,
+        -260
+      ],
+      "options": {
+        "shell": "/bin/bash",
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst queueDir = '/data/agency/queue/bsky';\nfs.mkdirSync(queueDir, { recursive: true });\nconst file = path.join(queueDir, `${$json.slug || 'pending'}.queue.json`);\nconst tmp = `${file}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ ts: new Date().toISOString(), slug: $json.slug || null, mp4: $json.mp4Path || null, title: $json.idea?.seo?.title || $json.idea?.title || '' }) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, file]);\nreturn items;\n"
+      },
+      "id": "26d68fe0-7016-45eb-a904-b58f6e90c6d6",
+      "name": "Queue Bluesky Artifact",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        3100,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $env.PEERTUBE_ENABLED === \"1\" }}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "7a0b8d06-bef9-4200-a10e-1bd5bdb0ef1d",
+      "name": "IF PeerTube Upload Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1.0,
+      "position": [
+        2840,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nmp4=\"{{$json.mp4Path || ''}}\"\ncmd=\"${PEERTUBE_UPLOAD_COMMAND:-}\"\nlog=/data/agency/logs/events.jsonl\nif [ -z \"$cmd\" ] || [ ! -f \"$mp4\" ]; then\n  tmp=$(mktemp)\nprintf '{\"ts\":\"%s\",\"event\":\"PEERTUBE_UPLOAD_SKIP\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"{{$json.slug || ''}}\" >\"$tmp\"\n  /usr/local/bin/atomic-mv \"$tmp\" \"$log\"\n  exit 0\nfi\nattempt=0\nmax=2\nwhile [ $attempt -lt $max ]; do\n  attempt=$((attempt+1))\n  if bash -lc \"$cmd\"; then\n    tmp=$(mktemp)\n    printf '{\"ts\":\"%s\",\"event\":\"PEERTUBE_UPLOAD_OK\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"{{$json.slug || ''}}\" >\"$tmp\"\n    /usr/local/bin/atomic-mv \"$tmp\" \"$log\"\n    exit 0\n  fi\n  sleep $((attempt*5))\ndone\ntmp=$(mktemp)\nprintf '{\"ts\":\"%s\",\"event\":\"PEERTUBE_UPLOAD_FAIL\",\"slug\":\"%s\"}\\n' \"$(date -Iseconds)\" \"{{$json.slug || ''}}\" >\"$tmp\"\n/usr/local/bin/atomic-mv \"$tmp\" \"$log\"\nexit 0\n"
+      },
+      "id": "c675890b-29de-40aa-9a6e-fb0d0ec686d8",
+      "name": "PeerTube Upload",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        3100,
+        120
+      ],
+      "options": {
+        "shell": "/bin/bash",
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst queueDir = '/data/agency/queue/peertube';\nfs.mkdirSync(queueDir, { recursive: true });\nconst file = path.join(queueDir, `${$json.slug || 'pending'}.queue.json`);\nconst tmp = `${file}.tmp.${Date.now()}`;\nfs.writeFileSync(tmp, JSON.stringify({ ts: new Date().toISOString(), slug: $json.slug || null, mp4: $json.mp4Path || null }) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, file]);\nreturn items;\n"
+      },
+      "id": "553eb569-45ba-443d-bbeb-9f6d0e5fd84d",
+      "name": "Queue PeerTube Artifact",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        3100,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "time",
+            "hour": 3,
+            "minute": 40,
+            "weekday": "*",
+            "timezone": "Asia/Bangkok"
+          }
+        ]
+      },
+      "id": "759a78b6-371e-46ef-ac05-dcb9036ad33a",
+      "name": "Nightly Telemetry Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.0,
+      "position": [
+        -2600,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nin=/data/agency/performance\nout=/data/agency/weights/weights.csv\nmkdir -p \"$(dirname \"$out\")\"\nif ! ls \"$in\"/*.csv >/dev/null 2>&1; then\n  tmp=$(mktemp)\n  printf 'niche,archetype,epv,weight\\n' >\"$tmp\"\n  /usr/local/bin/atomic-mv \"$tmp\" \"$out\"\n  exit 0\nfi\ntmp=$(mktemp)\nprintf 'niche,archetype,epv,weight\\n' >\"$tmp\"\npython - <<'PY'\nimport csv\nimport glob\nfrom collections import defaultdict\nin_dir = '/data/agency/performance'\nfiles = glob.glob(f\"{in_dir}/*.csv\")\nagg = defaultdict(lambda: {'epv': 0.0, 'count': 0})\nfor path in files:\n    with open(path, newline='') as f:\n        reader = csv.DictReader(f)\n        for row in reader:\n            try:\n                imp = float(row.get('impressions', '0') or 0)\n                rev = float(row.get('revenue', '0') or 0)\n            except ValueError:\n                continue\n            if imp <= 0:\n                continue\n            niche = (row.get('niche') or '').strip() or 'unknown'\n            arch = (row.get('archetype') or '').strip() or 'commodity'\n            key = (niche, arch)\n            agg[key]['epv'] += rev / imp\n            agg[key]['count'] += 1\nout_rows = []\nper_niche_totals = defaultdict(float)\nfor (niche, arch), stats in agg.items():\n    avg = stats['epv'] / max(stats['count'], 1)\n    out_rows.append((niche, arch, avg))\n    per_niche_totals[niche] += avg\nwith open('$tmp', 'a', newline='') as out:\n    writer = csv.writer(out)\n    for niche, arch, epv in out_rows:\n        total = per_niche_totals[niche]\n        weight = (epv / total) if total else 0.0\n        writer.writerow([niche, arch, f\"{epv:.6f}\", f\"{weight:.6f}\"])\nPY\n/usr/local/bin/atomic-mv \"$tmp\" \"$out\"\n"
+      },
+      "id": "183ae0d3-bc27-4579-99a6-502cf219170c",
+      "name": "Ingest Performance Telemetry",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        -2260,
+        640
+      ],
+      "options": {
+        "shell": "/bin/bash",
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'TELEMETRY_REFRESH',\n  slug: null,\n  meta: { weights: '/data/agency/weights/weights.csv' }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+      },
+      "id": "c0239d19-4d20-45d1-8b2a-28ed86ea1b1f",
+      "name": "Log Telemetry Refresh",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        -1980,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "time",
+            "hour": 4,
+            "minute": 15,
+            "weekday": "*",
+            "timezone": "Asia/Bangkok"
+          }
+        ]
+      },
+      "id": "ab9099f2-1df1-4b1e-8e62-da279fa43123",
+      "name": "Backup Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.0,
+      "position": [
+        -2600,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nd=/data/agency\nts=$(date +%Y%m%d)\nmkdir -p \"$d/logs\"\ntarball=\"$d/logs/backup-$ts.tar.gz\"\nif [ -d \"$d/datastore\" ] && [ -d \"$d/weights\" ] && [ -f \"$d/logs/events.jsonl\" ]; then\n  tar -czf \"$tarball\" \"$d/datastore\" \"$d/weights\" \"$d/logs/events.jsonl\"\nfi\nfind \"$d/logs\" -name 'backup-*.tar.gz' -mtime +14 -delete\n"
+      },
+      "id": "7d87b617-e2cd-4936-8345-ce1106883ca3",
+      "name": "Nightly Backup",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        -2260,
+        880
+      ],
+      "options": {
+        "shell": "/bin/bash"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'BACKUP_COMPLETE',\n  slug: null,\n  meta: { archive: `/data/agency/logs/backup-${new Date().toISOString().slice(0,10).replace(/-/g,'')}.tar.gz` }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+      },
+      "id": "e73986db-b309-4e64-acfc-7bab8cc08fb3",
+      "name": "Log Backup Event",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        -1980,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "time",
+            "hour": 5,
+            "minute": 5,
+            "weekday": "*",
+            "timezone": "Asia/Bangkok"
+          }
+        ]
+      },
+      "id": "e7c048b0-da9d-4a18-a869-198357d6ecb5",
+      "name": "Secret Scan Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.0,
+      "position": [
+        -2600,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nout=/data/audit/workflows.json\ndefault_src=codex-zero-trust-workflow.json\nmkdir -p /data/audit\ncp \"$default_src\" \"$out\"\nscan=$(mktemp)\nif grep -Ei '\"token\"|api_key|password|secret|refresh' -n \"$out\" >\"$scan\"; then\n  dest=/data/agency/logs/secret_findings.txt\n  mkdir -p \"$(dirname \"$dest\")\"\n  /usr/local/bin/atomic-mv \"$scan\" \"$dest\"\nelse\n  rm -f \"$scan\"\nfi\n"
+      },
+      "id": "59d3042d-aa84-4aad-8aca-4705f3aeeb6c",
+      "name": "Secret Scan",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        -2260,
+        1120
+      ],
+      "options": {
+        "shell": "/bin/bash",
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'SECRET_SCAN',\n  slug: null,\n  meta: { report: '/data/agency/logs/secret_findings.txt' }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+      },
+      "id": "ef0e2e90-28d7-4469-af16-46cd265f09fc",
+      "name": "Log Secret Scan",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        -1980,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyDay",
+            "hour": 6,
+            "minute": 0,
+            "timezone": "Asia/Bangkok"
+          }
+        ]
+      },
+      "id": "3a8323ae-1897-407f-9c6c-11479903aad5",
+      "name": "Maintenance Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1.0,
+      "position": [
+        -2600,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "command": "set -euo pipefail\nsyn=/data/agency/datastore/synthetic_trends.txt\nmkdir -p \"$(dirname \"$syn\")\"\npython - <<'PY'\nfrom pathlib import Path\nsyn = Path('/data/agency/datastore/synthetic_trends.txt')\nlines = [f\"synthetic-{i}\" for i in range(200)]\nsyn.write_text(\"\\n\".join(lines) + \"\\n\")\nPY\nfallocate -l 1048576 /data/agency/.flood || true\nmkdir -p /data/agency/dlq\nprintf '{\"ts\":\"%s\",\"event\":\"MAINTENANCE_CHECK\"}\\n' \"$(date -Iseconds)\" > /data/agency/dlq/maintenance.json\n"
+      },
+      "id": "ad5853cc-3691-4dd6-af21-1a8f1dbce86e",
+      "name": "Maintenance Simulations",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1.1,
+      "position": [
+        -2260,
+        1360
+      ],
+      "options": {
+        "shell": "/bin/bash",
+        "continueOnFail": true
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const fs = require('fs');\nconst path = require('path');\nconst logPath = '/data/agency/logs/events.jsonl';\nfs.mkdirSync(path.dirname(logPath), { recursive: true });\nconst payload = {\n  ts: new Date().toISOString(),\n  event: 'MAINTENANCE_TASKS',\n  slug: null,\n  meta: { synthetic: '/data/agency/datastore/synthetic_trends.txt' }\n};\nconst tmp = `${logPath}.tmp.${Date.now()}`;\nconst existing = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8').replace(/\\n+$/, '') + '\\n' : '';\nfs.writeFileSync(tmp, existing + JSON.stringify(payload) + '\\n', 'utf8');\nrequire('child_process').execFileSync('/usr/local/bin/atomic-mv', [tmp, logPath]);\nreturn items;\n"
+      },
+      "id": "069b922f-3752-42df-a3eb-9ab86ed05a2e",
+      "name": "Log Maintenance Event",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1.0,
+      "position": [
+        -1980,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "id": "87241788-dd8c-4f01-8ed7-881901c6cd38",
+      "name": "Merge Ideation Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        960,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "id": "767e61d8-d034-4e79-949b-b671f66512cc",
+      "name": "Merge Repair Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        320
+      ]
     }
   ],
   "connections": {
     "cbfc1e42-0c84-4c3b-b304-8180c3dd9f8c": [
+      {
+        "main": [
+          [
+            {
+              "node": "1af45beb-f57a-4671-9400-98e8db1a8e19",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "1d0f14fa-c576-4dd8-b759-32b7d6a4330e": [
       {
         "main": [
           [
@@ -495,9 +1015,10 @@
         ]
       }
     ],
-    "dd5ee26e-00f9-4ede-b20a-8454b2b4ace6": [
+    "7149a82d-8729-446c-b31f-1bd2152b104c": [
       {
         "main": [
+          [],
           [
             {
               "node": "6cf76466-1f81-4893-b95a-6794fb03439b",
@@ -507,10 +1028,9 @@
         ]
       }
     ],
-    "7149a82d-8729-446c-b31f-1bd2152b104c": [
+    "dd5ee26e-00f9-4ede-b20a-8454b2b4ace6": [
       {
         "main": [
-          [],
           [
             {
               "node": "6cf76466-1f81-4893-b95a-6794fb03439b",
@@ -537,7 +1057,37 @@
         "main": [
           [
             {
+              "node": "eab6ddae-7f04-432d-a88b-61bae6c25ecd",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "eab6ddae-7f04-432d-a88b-61bae6c25ecd": [
+      {
+        "main": [
+          [
+            {
+              "node": "4d073731-ad00-4a2b-abe0-09cb5d753b66",
+              "type": "main"
+            }
+          ],
+          [
+            {
               "node": "0701371f-4c75-4030-8676-97c4349b2a9a",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "4d073731-ad00-4a2b-abe0-09cb5d753b66": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
               "type": "main"
             }
           ]
@@ -549,7 +1099,37 @@
         "main": [
           [
             {
+              "node": "b8b4ab50-6d0a-4ff7-9b59-0257a849010a",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "b8b4ab50-6d0a-4ff7-9b59-0257a849010a": [
+      {
+        "main": [
+          [
+            {
+              "node": "5f478000-68e1-4edd-9c70-7e309b879059",
+              "type": "main"
+            }
+          ],
+          [
+            {
               "node": "eea184e1-e8fc-4c20-b7a3-59a322526efc",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "5f478000-68e1-4edd-9c70-7e309b879059": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
               "type": "main"
             }
           ]
@@ -587,12 +1167,28 @@
             {
               "node": "942b1d70-9070-4745-85c9-7a84c3310e60",
               "type": "main"
+            },
+            {
+              "node": "87241788-dd8c-4f01-8ed7-881901c6cd38",
+              "type": "main"
             }
           ]
         ]
       }
     ],
     "942b1d70-9070-4745-85c9-7a84c3310e60": [
+      {
+        "main": [
+          [
+            {
+              "node": "87241788-dd8c-4f01-8ed7-881901c6cd38",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "87241788-dd8c-4f01-8ed7-881901c6cd38": [
       {
         "main": [
           [
@@ -624,11 +1220,7 @@
               "node": "465baae1-28ce-4da1-a2a3-7e3b1a26522c",
               "type": "main"
             }
-          ]
-        ]
-      },
-      {
-        "main": [
+          ],
           [
             {
               "node": "3421da9a-bd8b-4b4a-9d78-eda3418253b1",
@@ -645,12 +1237,28 @@
             {
               "node": "f241f177-7e08-4f75-8e4f-0a351abf2a6b",
               "type": "main"
+            },
+            {
+              "node": "767e61d8-d034-4e79-949b-b671f66512cc",
+              "type": "main"
             }
           ]
         ]
       }
     ],
     "f241f177-7e08-4f75-8e4f-0a351abf2a6b": [
+      {
+        "main": [
+          [
+            {
+              "node": "767e61d8-d034-4e79-949b-b671f66512cc",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "767e61d8-d034-4e79-949b-b671f66512cc": [
       {
         "main": [
           [
@@ -677,20 +1285,27 @@
     "4f729b52-6a23-4dfb-aba7-1d09487bfa79": [
       {
         "main": [
-          [],
           [
             {
               "node": "465baae1-28ce-4da1-a2a3-7e3b1a26522c",
               "type": "main"
             }
+          ],
+          [
+            {
+              "node": "0500a1cd-645e-45c0-a3e2-1f3ed02a8112",
+              "type": "main"
+            }
           ]
         ]
-      },
+      }
+    ],
+    "0500a1cd-645e-45c0-a3e2-1f3ed02a8112": [
       {
         "main": [
           [
             {
-              "node": "0500a1cd-645e-45c0-a3e2-1f3ed02a8112",
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
               "type": "main"
             }
           ]
@@ -702,7 +1317,49 @@
         "main": [
           [
             {
+              "node": "3a96143f-f6e6-49f0-8dc0-a9c113b6c618",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "3a96143f-f6e6-49f0-8dc0-a9c113b6c618": [
+      {
+        "main": [
+          [
+            {
+              "node": "489557be-bc34-4be1-b1cd-52a228dc0418",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "489557be-bc34-4be1-b1cd-52a228dc0418": [
+      {
+        "main": [
+          [
+            {
+              "node": "01b679cb-0cbd-41ab-ab0e-0abb9e7b1517",
+              "type": "main"
+            }
+          ],
+          [
+            {
               "node": "192e9a83-064e-42d9-8ff1-c47abc7aca95",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "01b679cb-0cbd-41ab-ab0e-0abb9e7b1517": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
               "type": "main"
             }
           ]
@@ -741,14 +1398,22 @@
               "node": "3b1fbff2-7f20-4e0c-b5bc-d6dba7c27bbf",
               "type": "main"
             }
+          ],
+          [
+            {
+              "node": "0c3ea71b-b2ae-4980-a689-3df6e240d407",
+              "type": "main"
+            }
           ]
         ]
-      },
+      }
+    ],
+    "0c3ea71b-b2ae-4980-a689-3df6e240d407": [
       {
         "main": [
           [
             {
-              "node": "0c3ea71b-b2ae-4980-a689-3df6e240d407",
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
               "type": "main"
             }
           ]
@@ -760,7 +1425,57 @@
         "main": [
           [
             {
+              "node": "55b2623f-4e20-453a-8462-1811f9d2b753",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "55b2623f-4e20-453a-8462-1811f9d2b753": [
+      {
+        "main": [
+          [
+            {
+              "node": "54dbe043-9f42-4136-bb92-37254861a67b",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "node": "1997cbdb-9e7b-44cf-adc8-6e990eeb9bc2",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "1997cbdb-9e7b-44cf-adc8-6e990eeb9bc2": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "54dbe043-9f42-4136-bb92-37254861a67b": [
+      {
+        "main": [
+          [
+            {
               "node": "e272a115-3e82-4b17-b092-8b324fcccb95",
+              "type": "main"
+            },
+            {
+              "node": "f0b48ffe-0bc5-413b-a187-91222743c577",
+              "type": "main"
+            },
+            {
+              "node": "7a0b8d06-bef9-4200-a10e-1bd5bdb0ef1d",
               "type": "main"
             }
           ]
@@ -775,26 +1490,10 @@
               "node": "6e81b13d-08f2-434a-bbd4-494f20ce55a6",
               "type": "main"
             }
-          ]
-        ]
-      },
-      {
-        "main": [
+          ],
           [
             {
               "node": "ce6f54a5-6a7d-4947-964c-346b570d2987",
-              "type": "main"
-            }
-          ]
-        ]
-      }
-    ],
-    "ce6f54a5-6a7d-4947-964c-346b570d2987": [
-      {
-        "main": [
-          [
-            {
-              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
               "type": "main"
             }
           ]
@@ -813,12 +1512,192 @@
         ]
       }
     ],
-    "0c3ea71b-b2ae-4980-a689-3df6e240d407": [
+    "ce6f54a5-6a7d-4947-964c-346b570d2987": [
       {
         "main": [
           [
             {
               "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "f0b48ffe-0bc5-413b-a187-91222743c577": [
+      {
+        "main": [
+          [
+            {
+              "node": "66634944-cf43-4687-af9e-378d7fa1b71e",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "node": "26d68fe0-7016-45eb-a904-b58f6e90c6d6",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "66634944-cf43-4687-af9e-378d7fa1b71e": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "26d68fe0-7016-45eb-a904-b58f6e90c6d6": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "7a0b8d06-bef9-4200-a10e-1bd5bdb0ef1d": [
+      {
+        "main": [
+          [
+            {
+              "node": "c675890b-29de-40aa-9a6e-fb0d0ec686d8",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "node": "553eb569-45ba-443d-bbeb-9f6d0e5fd84d",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "c675890b-29de-40aa-9a6e-fb0d0ec686d8": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "553eb569-45ba-443d-bbeb-9f6d0e5fd84d": [
+      {
+        "main": [
+          [
+            {
+              "node": "3f48f69e-9713-4e1e-aa6f-5e89056e0446",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "759a78b6-371e-46ef-ac05-dcb9036ad33a": [
+      {
+        "main": [
+          [
+            {
+              "node": "183ae0d3-bc27-4579-99a6-502cf219170c",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "183ae0d3-bc27-4579-99a6-502cf219170c": [
+      {
+        "main": [
+          [
+            {
+              "node": "c0239d19-4d20-45d1-8b2a-28ed86ea1b1f",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "ab9099f2-1df1-4b1e-8e62-da279fa43123": [
+      {
+        "main": [
+          [
+            {
+              "node": "7d87b617-e2cd-4936-8345-ce1106883ca3",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "7d87b617-e2cd-4936-8345-ce1106883ca3": [
+      {
+        "main": [
+          [
+            {
+              "node": "e73986db-b309-4e64-acfc-7bab8cc08fb3",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "e7c048b0-da9d-4a18-a869-198357d6ecb5": [
+      {
+        "main": [
+          [
+            {
+              "node": "59d3042d-aa84-4aad-8aca-4705f3aeeb6c",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "59d3042d-aa84-4aad-8aca-4705f3aeeb6c": [
+      {
+        "main": [
+          [
+            {
+              "node": "ef0e2e90-28d7-4469-af16-46cd265f09fc",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "3a8323ae-1897-407f-9c6c-11479903aad5": [
+      {
+        "main": [
+          [
+            {
+              "node": "ad5853cc-3691-4dd6-af21-1a8f1dbce86e",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    ],
+    "ad5853cc-3691-4dd6-af21-1a8f1dbce86e": [
+      {
+        "main": [
+          [
+            {
+              "node": "069b922f-3752-42df-a3eb-9ab86ed05a2e",
               "type": "main"
             }
           ]
