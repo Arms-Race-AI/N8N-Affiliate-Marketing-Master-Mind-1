@@ -634,11 +634,27 @@
                   },
                   {
                       "parameters":  {
-                                         "functionCode":  "const fs=require(\u0027fs\u0027);const dir=\u0027/data/agency\u0027;if(!fs.existsSync(dir))fs.mkdirSync(dir,{recursive:true});const p=`${dir}/${$json.slug}.txt`;fs.writeFileSync(p,$json.script||\u0027\u0027, \u0027utf8\u0027);return[{json:{...$json,script_path:p}}];"
+                                         "functionCode":  "const item=items[0] || {};const incomingJson=item.json || {};const incomingBinary=item.binary || {};const slug=(incomingJson.slug || \`script-${Date.now()}\`).toString();const script=incomingJson.script || '';const scriptPath=`/data/agency/${slug}.txt`;const buffer=Buffer.from(script, 'utf8');return [{json: {...incomingJson, script_path: scriptPath}, binary: {...incomingBinary, data: {data: buffer.toString('base64'), mimeType: 'text/plain', fileName: `${slug}.txt`}}}];"
+                                     },
+                      "id":  "2e7c8f6e-d0d5-4f89-8b48-b5c1f0f1ffbc",
+                      "name":  "Script → Binary",
+                      "type":  "n8n-nodes-base.function",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -17856,
+                                       5568
+                                   ]
+                  },
+                  {
+                      "parameters":  {
+                                         "fileName":  "={{$json.script_path}}",
+                                         "options":  {
+
+                                                     }
                                      },
                       "id":  "573e9dc8-5ac7-4fce-8fee-15bea05fc420",
                       "name":  "Write /data script",
-                      "type":  "n8n-nodes-base.function",
+                      "type":  "n8n-nodes-base.writeBinaryFile",
                       "typeVersion":  1,
                       "position":  [
                                        -17616,
@@ -2019,7 +2035,7 @@
                                                      "main":  [
                                                                   [
                                                                       {
-                                                                          "node":  "Write /data script",
+                                                                          "node":  "Script → Binary",
                                                                           "type":  "main",
                                                                           "index":  0
                                                                       }
@@ -2028,6 +2044,17 @@
                                                                   ]
                                                               ]
                                                  },
+                        "Script → Binary":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Write /data script",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
                         "Write /data script":  {
                                                    "main":  [
                                                                 [
