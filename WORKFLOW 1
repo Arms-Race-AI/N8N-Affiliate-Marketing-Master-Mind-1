@@ -463,7 +463,7 @@
                       "parameters":  {
                                          "fileName":  "=/data/agency/datastore/links.csv",
                                          "options":  {
-
+                                                         "append":  true
                                                      }
                                      },
                       "id":  "45ca8c25-ba26-421c-a2ff-74bcd0f3a7d1",
@@ -620,7 +620,7 @@
                       "parameters":  {
                                          "fileName":  "=/data/agency/logs/{{$now.toFormat(\u0027yyyy-LL-dd\u0027)}}.ndjson",
                                          "options":  {
-
+                                                         "append":  true
                                                      }
                                      },
                       "id":  "27b8dcad-3a59-4012-82df-f5d38f32a305",
@@ -789,6 +789,14 @@
                                          "requestMethod":  "POST",
                                          "url":  "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable\u0026part=snippet,status",
                                          "jsonParameters":  true,
+                                         "headerParametersUi":  {
+                                                                "parameter":  [
+                                                                                  {
+                                                                                      "name":  "Authorization",
+                                                                                      "value":  "={{ 'Bearer ' + $json.yt_access_token }}"
+                                                                                  }
+                                                                              ]
+                                                            },
                                          "options":  {
                                                          "timeout":  120000
                                                      },
@@ -821,7 +829,9 @@
                                                                                           "value":  "video/mp4"
                                                                                       }
                                                                                   ]
-                                                                }
+                                                                },
+                                         "sendBinaryData":  true,
+                                         "binaryPropertyName":  "data"
                                      },
                       "id":  "51814484-ddae-4f77-a824-c1bf0d87b849",
                       "name":  "YT Upload Chunk (full)",
@@ -971,7 +981,7 @@
                       "parameters":  {
                                          "fileName":  "=/data/agency/datastore/epc.csv",
                                          "options":  {
-
+                                                         "append":  true
                                                      }
                                      },
                       "id":  "8dac7a02-91e8-466b-b39f-cdaa344d7a5a",
